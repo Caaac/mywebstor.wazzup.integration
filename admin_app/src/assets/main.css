@@ -1,0 +1,62 @@
+:root {
+  --header-height: 71px;
+  --header-padding-top: 10px;
+  --left-menu-width: 210px;
+  --left-menu-width-collapsed: 45px;
+  --menu-btn-border-radius: 16px;
+  --body-background-color: #eeedf3;
+  --app-color-1: #0ECFBC;
+  --app-color-1-opacity-85: rgba(14, 207, 188, 0.15);
+  --menu-collapse-duration: 0.5s;
+  --div-background-color: rgb(245, 245, 245);
+  --div-background-color-hover: rgba(13, 207, 187, 0.15);
+  --text-gray: #545c6a;
+
+  /* left menu */
+  --left-menu-text-color: var(--app-color-1);
+  --left-menu-text-color-hover: var(--app-color-1);
+  --left-menu-btn-color: #effffd;
+  --left-menu-btn-color-hover: #c4fff9;
+}
+
+
+#global_settings {
+  /* background: var(--body-background-color); */
+
+  height: 100%;
+  position: relative;
+  /* display: flex; */
+}
+
+.content-center {
+  justify-content: center;
+}
+
+.app-conatiner {
+  height: 100% !important;
+  width: 100%;
+  padding: 10px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.app-header {
+  height: 40px;
+  display: flex;
+  /* padding-top: 10px; */
+  margin-top: 10px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-header-title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.app-body {
+  height: calc(100% - 80px);
+  width:100%;
+  overflow: auto;
+}
