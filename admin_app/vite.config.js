@@ -11,9 +11,15 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  server: {
+    cors: {
+      origin: "*",
+    },
+    port: 80,
+  },
   build: {
     rollupOptions: {
-      
+
       emptyOutDir: true,
       output: {
         entryFileNames: `assets/index.js`,

@@ -1,8 +1,10 @@
+import FirstPage from '@/views/FirstPage.vue'
 
 const routes = [
   {
     path: '/',
-    name: 'home',
+    name: 'main',
+    component: FirstPage
   },
 ]
 

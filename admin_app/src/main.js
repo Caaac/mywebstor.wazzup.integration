@@ -1,5 +1,5 @@
 import './assets/main.css'
-import 'primevue/resources/themes/aura-light-teal/theme.css'
+import 'primevue/resources/themes/aura-light-blue/theme.css'
 import 'primeicons/primeicons.css'
 
 import { createApp } from 'vue'
@@ -22,4 +22,4 @@ app.use(ToastService)
 app.use(ConfirmationService)
 app.use(router)
 
-app.mount('#global_settings')
+app.mount('#app')
