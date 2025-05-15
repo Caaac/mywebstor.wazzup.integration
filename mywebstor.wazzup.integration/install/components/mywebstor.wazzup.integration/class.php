@@ -30,12 +30,20 @@ class MywebstorPAMain extends \CBitrixComponent
   function executeComponent()
   {
     try {
+
+      AddMessage2Log(print_r([
+        'METHOD' => 'debugIntegrate',
+        'DATA' => $this->request->getJsonList(),
+        'getInput' => $this->request->getInput(),
+        'request' => $this->request,
+      ], true));
+
       $this->init();
       $this->checkToken();
 
       $content = "";
       $result = $this->debugIntegrate();
-      $content = \Bitrix\Main\Web\Json::encode($result);
+      // $content = \Bitrix\Main\Web\Json::encode($result);
       $status = self::STATUS_OK;
 
       $this->response
@@ -100,13 +108,18 @@ class MywebstorPAMain extends \CBitrixComponent
 
   protected function debugIntegrate()
   {
-    if ($this->request->getJsonList()->isEmpty())
-      $this->showError("Incorrect or empty JSON");
+    // if ($this->request->getJsonList()->isEmpty())
+    //   $this->showError("Incorrect or empty JSON");
 
     $result = array(
       "status" => "success",
       'data' => $this->request->getJsonList()->toArray(),
     );
+
+    // AddMessage2Log(print_r([
+    //   'METHOD' => 'debugIntegrate',
+    //   'DATA' => $this->request
+    // ], true));
 
     return $result;
   }

@@ -22,7 +22,5 @@ class CMywebstorWazzupIntegrationEvents
         'items' => [],
       ];
     }
-
-    AddMessage2Log($aGlobalMenu);
   }
 }

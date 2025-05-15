@@ -5,6 +5,7 @@
   "mywebstor.wazzup.integration",
   [
     "CMywebstorWazzupIntegrationEvents" => "classes/general/events.php",
+    "CMywebstorWazzupIntegrationRestService" => "classes/general/restservice.php",
   ]
 );
 

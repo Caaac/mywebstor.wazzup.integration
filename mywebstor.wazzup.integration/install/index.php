@@ -15,13 +15,13 @@ class mywebstor_wazzup_integration extends CModule
     public $MODULE_ID = "mywebstor.wazzup.integration";
     public $errors = '';
     static $events = [
-        // [
-        //     "FROM_MODULE" => "rest",
-        //     "FROM_EVENT" => "onRestServiceBuildDescription",
-        //     "TO_CLASS" => "CMywebstorWazzupIntegrationRestService",
-        //     "TO_FUNCTION" => "onRestServiceBuildDescription",
-        //     "VERSION" => "1"
-        // ],
+        [
+            "FROM_MODULE" => "rest",
+            "FROM_EVENT" => "onRestServiceBuildDescription",
+            "TO_CLASS" => "CMywebstorWazzupIntegrationRestService",
+            "TO_FUNCTION" => "onRestServiceBuildDescription",
+            "VERSION" => "1"
+        ],
         [
             "FROM_MODULE" => "main",
             "FROM_EVENT" => "OnBuildGlobalMenu",
