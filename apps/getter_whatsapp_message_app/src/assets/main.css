@@ -1,0 +1,13 @@
+:root {
+  --color-main: #9ed097;
+}
+
+#app {
+  /* background-color: white; */
+}
+
+.p-button {
+  background-color: var(--color-main);
+  border-color: var(--color-main);
+  color: #333
+}
