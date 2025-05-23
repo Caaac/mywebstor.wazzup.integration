@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS mwi_activity_settings;

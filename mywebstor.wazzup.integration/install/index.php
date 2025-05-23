@@ -54,6 +54,7 @@ class mywebstor_wazzup_integration extends CModule
 
         ModuleManager::registerModule($this->MODULE_ID);
 
+        $this->InstallDB();
         $this->InstallFiles();
         $this->InstallEvents();
 
@@ -65,10 +66,46 @@ class mywebstor_wazzup_integration extends CModule
         if (!check_bitrix_sessid())
             return false;
 
-        ModuleManager::unRegisterModule($this->MODULE_ID);
+        global $APPLICATION, $USER, $DB, $step;
+        $step = intval($step);
+        if ($step < 2) {
+            $APPLICATION->IncludeAdminFile(Loc::getMessage("MYWEBSTOR_UNINSTALL_TITLE", array("#MODULE_NAME#" => $this->MODULE_NAME)), __DIR__ . "/unstep1.php");
+        } elseif ($step === 2) {
 
-        $this->UnInstallFiles();
-        $this->UnInstallEvents();
+            if (!array_key_exists('savedata', $_REQUEST) || $_REQUEST['savedata'] != 'Y') {
+                $this->UnInstallDB();
+            }
+
+            $this->UnInstallFiles();
+            $this->UnInstallEvents();
+
+            ModuleManager::unRegisterModule($this->MODULE_ID);
+        }
+
+        return true;
+    }
+
+
+    function InstallDB()
+    {
+        global $DB, $APPLICATION;
+        $this->errors = $DB->RunSQLBatch(__DIR__ . '/db/install.sql');
+        if (is_array($this->errors)) {
+            $APPLICATION->ThrowException(implode('<br />', $this->errors));
+            return false;
+        }
+        return true;
+    }
+
+    function UnInstallDB()
+    {
+        global $DB, $APPLICATION;
+        $this->errors = $DB->RunSQLBatch(__DIR__ . '/db/uninstall.sql');
+        if (is_array($this->errors)) {
+            $APPLICATION->ThrowException(implode('<br />', $this->errors));
+            return false;
+        }
+
         return true;
     }
 
@@ -85,6 +122,13 @@ class mywebstor_wazzup_integration extends CModule
         CopyDirFiles(
             __DIR__ . "/components",
             Application::getDocumentRoot() . "/local/components/",
+            true,
+            true
+        );
+
+        CopyDirFiles(
+            __DIR__ . "/activities",
+            Application::getDocumentRoot() . "/bitrix/activities/custom/",
             true,
             true
         );
@@ -108,7 +152,9 @@ class mywebstor_wazzup_integration extends CModule
 
         foreach ($dir->getChildren() as $item) {
             if (!$item->isDirectory()) {
-                IO\File::deleteFile(Application::getDocumentRoot() . '/bitrix/admin/' . $item->getName());
+                IO\File::deleteFile(
+                    Application::getDocumentRoot() . '/bitrix/admin/' . $item->getName()
+                );
             }
         }
 
@@ -119,6 +165,17 @@ class mywebstor_wazzup_integration extends CModule
             if ($item->isDirectory()) {
                 IO\Directory::deleteDirectory(
                     Application::getDocumentRoot() . '/local/components/' . $item->getName() . '/'
+                );
+            }
+        }
+
+        $dirPath = Application::getDocumentRoot() . "/local/modules/mywebstor.wazzup.integration/install/activities";
+        $dir = new IO\Directory($dirPath);
+
+        foreach ($dir->getChildren() as $item) {
+            if ($item->isDirectory()) {
+                IO\Directory::deleteDirectory(
+                    Application::getDocumentRoot() . '/bitrix/activities/custom/' . $item->getName() . '/'
                 );
             }
         }

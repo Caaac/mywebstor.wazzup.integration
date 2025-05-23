@@ -11,6 +11,7 @@ export const rootStore = defineStore('root', () => {
 
   const init = () => {
     activityId.value = window.parent.location.hash.slice(1)
+    // activityId.value = 'A82394_96494_15549_79836';
 
     message().init()
   }

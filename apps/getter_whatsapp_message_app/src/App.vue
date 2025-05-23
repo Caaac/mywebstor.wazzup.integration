@@ -97,6 +97,15 @@ watch(splitedBodyMessage, (newValue) => {
 
       <div class="settings-menu-item">
         <FloatLabel>
+          <Dropdown v-model="params.activityProperties.WhatsappChannelId" :options="params.chanels"
+            id="waba-chanel" optionLabel="name" optionValue="channelId" placeholder="Выберете отправителя"
+            class="input-field" />
+          <label for="waba-chanel">От кого писать</label>
+        </FloatLabel>
+      </div>
+     
+      <div class="settings-menu-item">
+        <FloatLabel>
           <Dropdown v-model="params.activityProperties.WhatsappMessageTemplateGUID" :options="params.templates"
             id="waba-tmpl" optionLabel="title" optionValue="templateGuid" placeholder="Выберете шаблон сообщения"
             class="input-field" />

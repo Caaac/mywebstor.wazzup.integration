@@ -20,34 +20,20 @@ class MywebstorPAMain extends \CBitrixComponent
   const STATUS_TO_MANY_REQUESTS = "429 Too Many Requests";
   const STATUS_INTERNAL = "500 Internal Server Error";
 
-  private const AUTH_KEY = '';
-
   /** @var \Bitrix\Main\HttpResponse $response */
   protected $response = null;
-
   protected $command = null;
 
   function executeComponent()
   {
     try {
 
-      AddMessage2Log(print_r([
-        'METHOD' => 'debugIntegrate',
-        'DATA' => $this->request->getJsonList(),
-        'getInput' => $this->request->getInput(),
-        'request' => $this->request,
-      ], true));
-
       $this->init();
-      $this->checkToken();
 
-      $content = "";
       $result = $this->debugIntegrate();
-      // $content = \Bitrix\Main\Web\Json::encode($result);
       $status = self::STATUS_OK;
 
       $this->response
-        ->setContent($content)
         ->setStatus($status);
 
       $this->end();
@@ -90,36 +76,18 @@ class MywebstorPAMain extends \CBitrixComponent
       );
   }
 
-  protected function checkToken()
-  {
-    // if (!self::AUTH_KEY || strlen(self::AUTH_KEY) !== 256)
-    //   $this->showError("Access token is corrupted.", self::STATUS_INTERNAL);
-
-    // $requestToken = $this->request->getHeader("Personal-Account-Integration-Auth-Token");
-
-    // if (!$requestToken || $requestToken != self::AUTH_KEY)
-    //   $this->showError("Authorization error", self::STATUS_UNAUTHORIZED);
-
-    // $command = $this->request->getHeader("Personal-Account-Integration-Command");
-
-    // if (isset($command) && !empty($command))
-    //   $this->command = $command;
-  }
-
   protected function debugIntegrate()
   {
-    // if ($this->request->getJsonList()->isEmpty())
-    //   $this->showError("Incorrect or empty JSON");
-
     $result = array(
       "status" => "success",
       'data' => $this->request->getJsonList()->toArray(),
     );
 
-    // AddMessage2Log(print_r([
-    //   'METHOD' => 'debugIntegrate',
-    //   'DATA' => $this->request
-    // ], true));
+    AddMessage2Log(print_r([
+      'METHOD' => 'debugIntegrate',
+      'DATA' => $this->request->getJsonList()->toArray(),
+      '_SERVER' => $_SERVER,
+    ], true));
 
     return $result;
   }

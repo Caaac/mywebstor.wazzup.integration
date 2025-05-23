@@ -12,6 +12,7 @@
 /* Include Modules */
 $modules = array(
   "crm",
+  "bizproc",
 );
 
 foreach ($modules as $module) {

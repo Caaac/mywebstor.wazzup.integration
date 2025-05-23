@@ -11,6 +11,10 @@ class CMywebstorWazzupIntegrationRestService extends \IRestService
       CRestUtil::GLOBAL_SCOPE => array_merge(
         Rest\Settings::$methods,
         Rest\Integration::$methods,
+        Rest\ActivitySettings::$methods,
+
+        Rest\Wazzup\Chanels::$methods,
+        Rest\Wazzup\MessageTemplates::$methods,
       ),
     ];
   }

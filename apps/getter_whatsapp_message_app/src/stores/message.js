@@ -7,6 +7,7 @@ export const messageStore = defineStore('message', () => {
   const store = rootStore()
 
   const params = ref({
+    chanels: [],
     templates: [],
     activityProperties: { WhatsappMessageTemplateGUID: null },
     selectedTemplate: null,
@@ -27,9 +28,17 @@ export const messageStore = defineStore('message', () => {
       }
     }]
 
+    cmd['avaliableChanels'] = ['mwi.wazzup.chanels.get', {
+      filter: {
+        state: 'active',
+        transport: 'wapi',
+      }
+    }]
+
     cmd['activityProperties'] = ['mwi.activity.settings.get', {
       activityName: store.activityId,
-      select: ['WhatsappMessageTemplateGUID', 'WhatsappMessageTemplateCode', 'WhatsappMessageBodyValues']
+      select: ['WhatsappMessageTemplateGUID', 'WhatsappMessageBodyValues', 'WhatsappChannelId']
+      // select: ['WhatsappMessageTemplateGUID', 'WhatsappMessageTemplateCode', 'WhatsappMessageBodyValues', 'WhatsappChannelId]
     }]
 
     return new Promise((resolve, reject) => {
@@ -45,6 +54,7 @@ export const messageStore = defineStore('message', () => {
             }
           });
 
+          params.value.chanels = responce.avaliableChanels.data();
           params.value.templates = responce.messageTemplates.data();
           params.value.activityProperties = responce.activityProperties.data();
 
@@ -63,8 +73,9 @@ export const messageStore = defineStore('message', () => {
         activityName: store.activityId,
         activityProperties: {
           WhatsappMessageTemplateGUID: params.value.selectedTemplate.templateGuid,
-          WhatsappMessageTemplateCode: params.value.selectedTemplate.templateCode,
-          WhatsappMessageBodyValues: JSON.stringify(params.value.variables.body)
+          // WhatsappMessageTemplateCode: params.value.selectedTemplate.templateCode,
+          WhatsappMessageBodyValues: JSON.stringify(params.value.variables.body),
+          WhatsappChannelId: params.value.activityProperties.WhatsappChannelId
         }
       },
       response => {

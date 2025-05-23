@@ -14,7 +14,6 @@ use \Bitrix\Main\Web\HttpClient;
 class Integration extends \IRestService
 {
   const NAMESPACE = 'mwi.integration';
-  const WEBHOOK_URL = 'https://api.wazzup24.com/v3/webhooks';
 
   public static $methods = [
     self::NAMESPACE . '.get' => [__CLASS__, 'get'],
