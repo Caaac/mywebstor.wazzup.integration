@@ -2,14 +2,17 @@
 
 namespace Mywebstor\Wazzup\Integration\Rest;
 
-/** Module classes */
+/* Module classes */
 
-use Bitrix\Bizproc\WorkflowTemplateTable;
 use Mywebstor\Wazzup\Integration\Helper;
 use Mywebstor\Wazzup\Integration\ActivitySettingsTable;
 
-/** Bitrix classes */
 
+/* Bitrix classes */
+/* -- Bizproc --  */
+use Bitrix\Bizproc\Automation\Helper as AutomationHelper;
+use Bitrix\Bizproc\WorkflowTemplateTable;
+/* -- e.t.c. --  */
 use Bitrix\Rest\RestException;
 use Bitrix\Main\Web\HttpClient;
 use CBPWorkflowTemplateLoader;
@@ -19,14 +22,17 @@ class ActivitySettings extends \IRestService
   const NAMESPACE = 'mwi.activity.settings';
 
   public static $methods = [
-    // self::NAMESPACE . '.get' => [__CLASS__, 'get'],             // DEP
-    // self::NAMESPACE . '.list' => [__CLASS__, 'list'],           // DEP
-    // self::NAMESPACE . '.template' => [__CLASS__, 'template'],   // DEP
     self::NAMESPACE . '.get' => [__CLASS__, 'get'],
     self::NAMESPACE . '.update' => [__CLASS__, 'update'],
   ];
 
 
+  /**
+   * @var array $query | Expected:
+   *    - activityName
+   *    - select (optional)
+   * @throws RestException
+   */
   public static function get($query)
   {
     $validField = ['activityName'];
@@ -55,6 +61,12 @@ class ActivitySettings extends \IRestService
       return 0;
     }
 
+    $wfDocument = [
+      $wfObject->getModuleId(),
+      $wfObject->getEntity(),
+      $wfObject->getDocumentType()
+    ];
+
     $arWorkflowTemplate = $wfObject->getTemplate();
     $arCurrentActivity = &CBPWorkflowTemplateLoader::FindActivityByName(
       $arWorkflowTemplate,
@@ -62,16 +74,14 @@ class ActivitySettings extends \IRestService
     );
 
     if (!isset($query["select"]) || empty($query["select"])) {
-      return $arCurrentActivity["Properties"];
+      return self::convertExpressions($arCurrentActivity["Properties"], $wfDocument);
     }
-
-    $responce = [];
 
     foreach ($query["select"] as $propKey) {
       $responce[$propKey] = $arCurrentActivity["Properties"][$propKey] ?: '';
     }
 
-    return $responce;
+    return self::convertExpressions($responce, $wfDocument);
   }
 
 
@@ -116,11 +126,25 @@ class ActivitySettings extends \IRestService
       $activityName
     );
 
+    $wfDocument = [
+      $wfObject->getModuleId(),
+      $wfObject->getEntity(),
+      $wfObject->getDocumentType(),
+    ];
+
     foreach ($activityProperties as $key => $value) {
       if (gettype($value) == 'array') {
         $value = json_encode($value, JSON_UNESCAPED_UNICODE);
       }
-      $arCurrentActivity['Properties'][$key] = $value;
+      $arCurrentActivity['Properties'][$key] = AutomationHelper::unConvertExpressions(
+        $value,
+        [
+          $wfObject->getModuleId(),
+          $wfObject->getEntity(),
+          $wfObject->getDocumentType(),
+        ],
+        false
+      );
     }
 
     $r = CBPWorkflowTemplateLoader::update(
@@ -143,41 +167,18 @@ class ActivitySettings extends \IRestService
     return $r;
   }
 
-  public static function list($query)
+  public static function convertExpressions(array $propsList,array $wfDocument)
   {
-    $settings = ActivitySettingsTable::query();
+    $responce = [];
 
-    if (!empty($query['select'])) {
-      $settings->setSelect($query['select']);
-    } else {
-      $settings->setSelect(['*']);
+    foreach ($propsList as $propKey => $propValue) {
+      $responce[$propKey] = AutomationHelper::convertExpressions(
+        $propValue,
+        $wfDocument,
+        false
+      );
     }
 
-    if (!empty($query['filter'])) {
-      $settings->setFilter($query['filter']);
-    }
-
-    if (!empty($query['order'])) {
-      $settings->setOrder($query['order']);
-    }
-
-    if (!empty($query['limit'])) {
-      $settings->setLimit($query['limit']);
-    }
-
-    $result = $settings->fetchAll();
-
-    return $result ?: [];
-  }
-
-  public static function template()
-  {
-    $tmpl = [];
-
-    foreach (ActivitySettingsTable::getMap() as $key => $_value) {
-      $tmpl[$key] = null;
-    }
-
-    return $tmpl;
+    return $responce;
   }
 }

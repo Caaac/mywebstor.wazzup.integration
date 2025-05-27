@@ -11,13 +11,14 @@ CREATE TABLE IF NOT EXISTS mwi_bp_workflow_sended_messages (
   WORKFLOW_ID VARCHAR(36) NOT NULL, -- uuid4
   ACTIVITY_NAME VARCHAR(60) NOT NULL,
   MESSAGE_TEMPLATE_ID VARCHAR(36) NOT NULL, -- uuid4
-  SENDER_ID INT NOT NULL,
   DATE_SEND DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CHANEL_ID VARCHAR(36) NOT NULL, -- uuid4
+  CHAT_ID VARCHAR(20) NOT NULL, -- для whatsapp и viber — только цифры, без пробелов и специальных символов в формате 79011112233
+  SEND_MESSAGE_ID VARCHAR(36) DEFAULT NULL,  -- uuid4 Сообщение может не отправится тогда будет Null
+  MESSAGE_STATUS SMALLINT NOT NULL, -- HTTP Status: 1.. - 5..
+  STATUS SMALLINT NOT NULL,
   -- Заполняются при получении сообщения
-  CHANEL_ID VARCHAR(36) DEFAULT NULL, -- uuid4
-  CHAT_ID VARCHAR(20) DEFAULT NULL, -- для whatsapp и viber — только цифры, без пробелов и специальных символов в формате 79011112233
   ANSWERED_MESSAGE TEXT DEFAULT NULL,
-  MESSAGE_ID VARCHAR(36) DEFAULT NULL,  -- uuid4
+  ANSWERED_MESSAGE_ID VARCHAR(36) DEFAULT NULL,  -- uuid4
   DATE_ANSWER DATETIME DEFAULT NULL
-  
 )

@@ -3,6 +3,8 @@
 use \Bitrix\Main\Application;
 use Bitrix\Main\SystemException;
 use Bitrix\Main\Localization\Loc;
+use Bitrix\Main\Type\DateTime;
+use Mywebstor\Wazzup\Integration\WorkflowSendedMessagesTable;
 
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 
@@ -44,7 +46,7 @@ class MywebstorPAMain extends \CBitrixComponent
 
   private function includeModules()
   {
-    $modules = [];
+    $modules = ['mywebstor.wazzup.integration'];
 
     foreach ($modules as $module) {
       if (!\CModule::IncludeModule($module)) {
@@ -83,11 +85,75 @@ class MywebstorPAMain extends \CBitrixComponent
       'data' => $this->request->getJsonList()->toArray(),
     );
 
+    // TODO: delete
     AddMessage2Log(print_r([
       'METHOD' => 'debugIntegrate',
       'DATA' => $this->request->getJsonList()->toArray(),
-      '_SERVER' => $_SERVER,
+      // '_SERVER' => $_SERVER,
     ], true));
+
+    $request = $this->request->getJsonList()->toArray();
+
+    foreach ($request['messages'] ?: [] as $key => $message) {
+
+      if ($message['status'] != 'inbound' || $message['chatType'] != 'whatsapp') {
+        continue;
+      }
+
+      $messageData = [
+        'ANSWERED_MESSAGE' => $message['text'],
+        'ANSWERED_MESSAGE_ID' => $message['messageId'],
+        'DATE_ANSWER' => DateTime::createFromTimestamp(strtotime($message['dateTime'])),
+      ];
+
+      $msgColl = WorkflowSendedMessagesTable::query()
+        ->setSelect(['*'])
+        ->where('CHAT_ID', $message['chatId'])
+        ->where('ANSWERED_MESSAGE_ID', null)
+        ->where('STATUS', WorkflowSendedMessagesTable::STATUS_WAIT_ANSWER)
+        ->setOrder(['ID' => 'DESC'])
+        ->fetchCollection();
+
+      if (!$msgColl) {
+        continue;
+      }
+
+      try {
+        $firstObj = null;
+
+        foreach ($msgColl as $msgObj) {
+          switch ($firstObj == null) {
+            case true:
+              $firstObj = $msgObj;
+              $msgObj->set('ANSWERED_MESSAGE', $messageData['ANSWERED_MESSAGE']);
+              $msgObj->set('ANSWERED_MESSAGE_ID', $messageData['ANSWERED_MESSAGE_ID']);
+              $msgObj->set('DATE_ANSWER', $messageData['DATE_ANSWER']);
+              $msgObj->set('STATUS', WorkflowSendedMessagesTable::STATUS_ANSWERED);
+              $msgObj->save();
+              break;
+            case false:
+            default:
+              $msgObj->setStatus(WorkflowSendedMessagesTable::STATUS_NOT_ANSWERED);
+              $msgObj->save();
+              break;
+          }
+        }
+
+        CBPRuntime::SendExternalEvent(
+          $firstObj->getWorkflowId(),
+          $firstObj->getActivityName(),
+          $messageData,
+        );
+      } catch (SystemException $e) {
+        AddMessage2Log(print_r([
+          'MODULE' => 'mywebstor.wazzup.integration',
+          'METHOD' => 'debugIntegrate',
+          'STATUS' => 'ERROR',
+          'MESSAGE_ERROR' => $e->getMessage(),
+          'REQUEST' => $this->request->getJsonList()->toArray(),
+        ], true));
+      }
+    }
 
     return $result;
   }

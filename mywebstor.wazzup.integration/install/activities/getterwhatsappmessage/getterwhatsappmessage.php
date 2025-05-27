@@ -1,14 +1,12 @@
 <?
 
+/* Modules classes */
 use Mywebstor\Wazzup\Integration\Helper;
 use Mywebstor\Wazzup\Integration\WorkflowSendedMessagesTable;
 
+/* Bizproc classes */
 use Bitrix\Bizproc\FieldType;
-use Bitrix\Bizproc\Activity\BaseActivity;
-use Bitrix\Bizproc\WorkflowTemplateTable;
-
 use Bitrix\Main\Web\HttpClient;
-
 use Bitrix\Main\Localization\Loc;
 
 Loc::loadMessages(__FILE__);
@@ -16,9 +14,10 @@ Loc::loadMessages(__FILE__);
 class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, IBPActivityExternalEventListener
 {
 
-  private $test = '{{ID элемента CRM}}';
-  private $test_2 = '{=Document:CRM_ID}';
-  private $channelId = '020dd4fc-f6c2-497c-a103-df1737822682';
+  const STATUS_SUCCESS = 'success';
+  const STATUS_ERROR = 'error';
+
+  private $status = null;
 
   function __construct($name)
   {
@@ -27,13 +26,12 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
     $this->SetPropertiesTypes(self::getArPropertiesTypes());
   }
 
-  protected function includeModules()
+  protected static function includeModules()
   {
     $modules = ['bizproc', 'mywebstor.wazzup.integration'];
 
     foreach ($modules as $module) {
       if (!\Bitrix\Main\Loader::IncludeModule($module)) {
-        AddMessage2Log('Module ' . $module . ' is not installed');
         throw new \Exception('Module ' . $module . ' is not installed');
       }
     }
@@ -46,105 +44,84 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
   public function Execute()
   {
 
-    $this->WriteToTrackingService('БП запустился');
+    $this->WriteToTrackingService('Бизнес-процесс запустился');
 
-    $this->includeModules();
+    self::includeModules();
     $this->Subscribe($this);
 
-    // Я разрабатываю кастомное действие в для бизнес процессов в Битрик 24
+    /** @var array $phones */
+    $phones = $this->ParseValue('{'.'=Document:PHONE}');
 
-    // Как мне из шаблолна значения {{ID элемента CRM}} получить {=Document:CRM_ID}
-
-    $aaa = '{=Document:CRM_ID}';
-    $bbb = '{{ID элемента CRM}}';
-
-    $rootActivity = $this->GetRootActivity();
-    $documentId = $rootActivity->GetDocumentId();
-    $runtime = CBPRuntime::GetRuntime();
-    $documentService = $runtime->GetService('DocumentService');
-    $taskService = $this->workflow->GetService('TaskService');
-
-    $document = $documentService->getDocument($documentId);
-    
-    AddMessage2Log([
-      'ID элемента CRM test' => $this->test,
-      'ID элемента CRM test 2' => $this->test_2,
-      'CrmContactId' => $this->CrmContactId,
-    ]);
-
-    AddMessage2Log([
-      // 'document' => $document->getFields(),
-      'p1' => $this->parseExpression('{{ID элемента CRM}}'),
-      'p2' => $this->parseExpression('{'. '{ID элемента CRM}}'),
-      'p3' => $this->parseExpression('{=Document:CRM_ID}'),
-      'p4' => $this->parseExpression('{'.'=Document:CRM_ID}'),
-      'pv1' => $this->parseValue('{{ID элемента CRM}}'),
-      'pv2' => $this->parseValue('{'. '{ID элемента CRM}}'),
-      'pv3' => $this->parseValue('{=Document:CRM_ID}'),
-      'pv4' => $this->parseValue('{'.'=Document:CRM_ID}'),
-      // 'getArProperties' => $this->getArProperties(),
-      // 'getRawProperty' => $this->getRawProperty('CrmContactId'),
-      // 'getArProperties' => $this->getRuntimeProperty(),
-    ]);
-
-    $this->WriteToTrackingService('$this->CrmContactId = ' . $this->CrmContactId);
+    /** @var string $chatId */
+    $chatId = array_shift($phones)['VALUE'];
+    $chatId = preg_replace('![^0-9]+!', '', $chatId);
 
     $queryData = [
       'channelId' => $this->WhatsappChannelId,
       'chatType' => 'whatsapp',
-      'chatId' => '79134570795',
+      'chatId' => $chatId, // TODO
       'templateId' => $this->WhatsappMessageTemplateGUID,
       'templateValues' => []
     ];
 
-    $WhatsappMessageBodyValues = $this->WhatsappMessageBodyValues;
-
-    AddMessage2Log([
-      'NOT_PARSE' => $WhatsappMessageBodyValues,
-      'PARSE' => json_decode($WhatsappMessageBodyValues, true),
-    ]);
-
-    try {
-      // TODO добавить валидацию сохраняемых данных
-      foreach (json_decode($WhatsappMessageBodyValues, true) as $key => $value) {
-        AddMessage2Log($value);
-        $this->WriteToTrackingService($key . ' = ' . $value);
-        $queryData['templateValues'][] = $value;
-      }
-    } catch (\Exception $e) {
-      throw new \Exception(Loc::getMessage('ERROR__INVALID_JSON'));
+    foreach (json_decode($this->WhatsappMessageBodyValues, true) as $key => $value) {
+      // TODO delete
+      $this->WriteToTrackingService($key . ' = ' . $value);
+      $queryData['templateValues'][] = $value;
     }
-    
+
+    // TODO delete
     $this->WriteToTrackingService('Запрос на отправку сообщения в Wassup: ' . json_encode($queryData, JSON_UNESCAPED_UNICODE));
 
-    $response = self::sendMessage($queryData);
-
-    $this->WriteToTrackingService('Ответ от Wassup: ' . json_encode($response, JSON_UNESCAPED_UNICODE));
-    
     $data = [
       'WORKFLOW_ID' => $this->workflow->getInstanceId(),
       'ACTIVITY_NAME' => $this->name,
       'MESSAGE_TEMPLATE_ID' => $this->WhatsappMessageTemplateGUID,
-      'SENDER_ID' => 1, // TODO убрать поле
+      'CHANEL_ID' => $this->WhatsappChannelId,
+      'CHAT_ID' => $chatId, // TODO
+      'MESSAGE_STATUS' => null,
+      'SEND_MESSAGE_ID' => null,
+      'STATUS' => WorkflowSendedMessagesTable::STATUS_WAIT_ANSWER,
     ];
-    
+
+    try {
+      $response = self::sendMessage($queryData);
+
+      $data['MESSAGE_STATUS'] = $response['status'];
+      $data['SEND_MESSAGE_ID'] = $response['data']['messageId'] ?: null;
+
+      $this->status = $response['status'];
+      $this->WriteToTrackingService('Ответ от Wassup: ' . json_encode($response['data'], JSON_UNESCAPED_UNICODE));
+    } catch (\Exception $e) {
+      $this->status = $e->getCode();
+      $data['MESSAGE_STATUS'] = $e->getCode();
+      $data['STATUS'] = WorkflowSendedMessagesTable::STATUS_ERROR;
+    }
+
+    // TODO delete
     $this->WriteToTrackingService('Данные в таблицу WorkflowSendedMessagesTable: ' . json_encode($data, JSON_UNESCAPED_UNICODE));
 
     $resultAdd = WorkflowSendedMessagesTable::add($data);
 
     if (!$resultAdd->isSuccess()) {
-      $this->WriteToTrackingService($resultAdd->getErrorMessages()[0]);
-      throw new \Exception(Loc::getMessage('ERROR__MESSAGE_NOT_ADD_TO_TABLE'));
+      throw new \Exception(Loc::getMessage('ERROR__MESSAGE_NOT_ADD_TO_TABLE') . ' \n ' . $resultAdd->getErrorMessages()[0]);
+    }
+
+    if ($this->status >= 400) {
+      CBPRuntime::SendExternalEvent(
+        $this->workflow->getInstanceId(),
+        $this->name,
+        [
+          'ANSWERED_MESSAGE' => null,
+          'ANSWERED_MESSAGE_ID' => null,
+          'DATE_ANSWER' => null,
+        ],
+      );
+
+      return CBPActivityExecutionStatus::Closed;
     }
 
     // AddMessage2Log([
-    //   'WhatsappMessageTemplateGUID' => $this->WhatsappMessageTemplateGUID,
-    //   'WhatsappMessageTemplateCode' => $this->WhatsappMessageTemplateCode,
-    //   'WhatsappMessageBodyValues' => $this->WhatsappMessageBodyValues,
-    // ]);
-
-    // AddMessage2Log([
-    //   // '$WhatsappMessageTemplateGUID' => $this->WhatsappMessageTemplateGUID,
     //   '$this' => $this,
     //   '$$document' => $document,
     //   '$documentId' => $documentId,
@@ -156,22 +133,19 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
     //   'taskService' => $this->taskService,
     // ], 'documentId');
 
-    // return CBPActivityExecutionStatus::Closed;
+    // $rootActivity = $this->GetRootActivity();
+    // $documentId = $rootActivity->GetDocumentId();
+    // $runtime = CBPRuntime::GetRuntime();
+    // $documentService = $runtime->GetService('DocumentService');
+    // $taskService = $this->workflow->GetService('TaskService');
 
-    $rootActivity = $this->GetRootActivity();
-    $documentId = $rootActivity->GetDocumentId();
-    $runtime = CBPRuntime::GetRuntime();
-    $documentService = $runtime->GetService('DocumentService');
-    $taskService = $this->workflow->GetService('TaskService');
+    // $document = $documentService->getDocument($documentId);
 
-    $document = $documentService->getDocument($documentId);
+    // $companyId = $document['ID'];
 
-    $companyId = $document['ID'];
+    // $activityName = $this->name;
+    // $workflowId = $this->workflow->getInstanceId();
 
-    $activityName = $this->name;
-    $workflowId = $this->workflow->getInstanceId();
-
-    // return CBPActivityExecutionStatus::Closed;
     return CBPActivityExecutionStatus::Executing;
   }
 
@@ -186,11 +160,10 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
   public function HandleFault(Exception $exception)
   {
 
-    $this->WriteToTrackingService($exception);
-
-    AddMessage2Log($exception, '!HandleFault');
+    $this->WriteToTrackingService(Loc::getMessage('ERROR__ACTIVITY_EXCEPTION', array('#ERROR#' => $exception)));
 
     $status = $this->Cancel();
+
     // if ($status == CBPActivityExecutionStatus::Canceling) {
     //   return CBPActivityExecutionStatus::Faulting;
     // }
@@ -207,16 +180,12 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
   public function Cancel()
   {
 
-    $this->includeModules();
+    self::includeModules();
     $this->Unsubscribe($this);
-    
+
     AddMessage2Log('!Cancel');
 
-    $obj = WorkflowSendedMessagesTable::query()->setSelect(['ID'])->fetchObject();
-
-    if ($obj) {
-      $obj->delete();
-    }
+    $this->WriteToTrackingService(Loc::getMessage('MWI_ACTIVITY_CANCEL'));
 
     return CBPActivityExecutionStatus::Closed;
   }
@@ -229,13 +198,10 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
    */
   public function Subscribe(IBPActivityExternalEventListener $eventHandler) //2
   {
-
-    AddMessage2Log($eventHandler, '!Subscribe');
-
-    if ($eventHandler == null) throw new Exception("eventHandler");
-
+    if ($eventHandler == null) {
+      throw new Exception("eventHandler");
+    }
     $this->workflow->AddEventHandler($this->name, $eventHandler);
-    AddMessage2Log('!SubscribeEEEE');
   }
 
   /**
@@ -244,8 +210,14 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
    * @param array $arEventParameters
    * @throws Exception
    */
-  public function OnExternalEvent($arEventParameters = array())
+  public function OnExternalEvent($arEventParameters = [])
   {
+    self::includeModules();
+
+    $this->STATUS = $this->status < 400 ? self::STATUS_SUCCESS : self::STATUS_ERROR;
+    $this->STATUS_CODE = $this->status;
+    $this->ANSWERED_MESSAGE = $arEventParameters['ANSWERED_MESSAGE'];
+    $this->ANSWERED_MESSAGE_ID = $arEventParameters['ANSWERED_MESSAGE_ID'];
 
     AddMessage2Log($arEventParameters, 'OnExternalEvent params');
 
@@ -263,9 +235,7 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
    */
   public function Unsubscribe(IBPActivityExternalEventListener $eventHandler, int $status = 2)
   {
-
     AddMessage2Log($eventHandler, '!Unsubscribe');
-
     $this->workflow->RemoveEventHandler($this->name, $eventHandler);
   }
 
@@ -281,7 +251,7 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
     $siteId = ''
   ) {
 
-    if (! is_array($arCurrentValues)) {
+    if (!is_array($arCurrentValues)) {
       $arCurrentValues = self::getArProperties();
 
       $arCurrentActivity = &CBPWorkflowTemplateLoader::FindActivityByName(
@@ -294,11 +264,6 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
           $arCurrentValues,
           $arCurrentActivity['Properties']
         );
-        // $arCurrentValues['Responsible'] = CBPHelper::UsersArrayToString(
-        //   $arCurrentValues['Responsible'],
-        //   $arWorkflowTemplate,
-        //   $documentType
-        // );
       }
     }
 
@@ -335,67 +300,88 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
     &$arErrors
   ): bool {
 
-    AddMessage2Log([
-      'documentType' => $documentType,
-      'activityName' => $activityName,
-      'arWorkflowTemplate' => $arWorkflowTemplate,
-      'arWorkflowParameters' => $arWorkflowParameters,
-      'arWorkflowVariables' => $arWorkflowVariables,
-      'arCurrentValues' => $arCurrentValues,
-      // 'arErrors' => $arErrors,
-    ], '__SECOND');
+    self::includeModules();
 
-
-    $r = CBPWorkflowTemplateLoader::GetList(
-      array(),
-      array(
-        "DOCUMENT_TYPE" => array('crm', 'CCrmDocumentContact', 'CONTACT'),
-      )
-    );
-    /* Актуальные данные из приложения */
-    while ($res = $r->fetch()) {
-      // if (str_contains(json_encode($res['TEMPLATE']), 'A82394_96494_15549_79836'))
-      // AddMessage2Log($res, '__FIND');
-    }
-
-    // CBPHelper::UsersArrayToString();
-
-    // $arErrors[] = array(
-    //   'code' => 'Empty',
-    //   'message' => json_encode($arWorkflowTemplate, JSON_UNESCAPED_UNICODE),
-    //   // 'message' => Loc::getMessage('ERROR_NO_ASSIGN_NAME')
-    // );
-
-    // $arErrors[] = array(
-    //   'code' => 'Empty',
-    //   'message' => json_encode($activityName, JSON_UNESCAPED_UNICODE),
-    //   // 'message' => Loc::getMessage('ERROR_NO_ASSIGN_NAME')
-    // );
-
-    if (empty($arCurrentValues['CrmContactId'])) {
-      $arErrors[] = array(
-        'code' => 'Empty',
-        'message' => 'CrmContactId не заполнно'
-        // 'message' => Loc::getMessage('ERROR_NO_ASSIGN_NAME')
-      );
-    }
+    // AddMessage2Log([
+    //   'documentType' => $documentType,
+    //   'activityName' => $activityName,
+    //   'arWorkflowTemplate' => $arWorkflowTemplate,
+    //   'arWorkflowParameters' => $arWorkflowParameters,
+    //   'arWorkflowVariables' => $arWorkflowVariables,
+    //   'arCurrentValues' => $arCurrentValues,
+    //   // 'arErrors' => $arErrors,
+    // ], '__SECOND');
 
     $arProperties = array(
       'CrmContactId' => $arCurrentValues['CrmContactId'],
-      // 'WhatsappMessageTemplateGUID' => $arCurrentValues['WhatsappMessageTemplateGUID'],
-      // 'Responsible' => CBPHelper::UsersStringToArray(
-      //   $arCurrentValues['Responsible'],
-      //   $documentType,
-      //   $arErrors
-      // ),
-      // 'AssignmentName' => $arCurrentValues['AssignmentName'],
+      'WhatsappMessageTemplateGUID' => '',
+      'WhatsappMessageBodyValues' => '',
+      'WhatsappChannelId' => '',
     );
+
+    $wf = CBPWorkflowTemplateLoader::GetList(
+      [],
+      ["DOCUMENT_TYPE" => $documentType]
+    );
+
+    /** @var array $wfData | Need for get activity properties setted by app */
+    $wfData = null;
+
+    /* Get actual activity data */
+    while ($elWf = $wf->fetch()) {
+      if (str_contains(json_encode($elWf['TEMPLATE']), $activityName)) {
+        $wfData = $elWf;
+        break;
+      }
+    }
+
+    if (!$wfData) {
+      $arErrors[] = array(
+        'code' => 'Empty',
+        'message' => Loc::getMessage('ERROR__NOT_FOUND_WORKFLOW'),
+      );
+
+      return false;
+    }
+
+    $arActivityPropByApp = &CBPWorkflowTemplateLoader::FindActivityByName(
+      $wfData['TEMPLATE'],
+      $activityName
+    );
+
+    /** Check app setted fields */
+    foreach (self::getAppFields() as $field) {
+
+      /** Check array filed */
+      if (self::getArPropertiesTypes($field)['Array']) {
+        try {
+          $resultDecode = json_decode($arActivityPropByApp['Properties'][$field], true);
+          if (gettype($resultDecode) != 'array') throw new \Exception('TypeError', 400);
+        } catch (\Exception $e) {
+          $arErrors[] = array(
+            'code' => 'Empty',
+            'message' => Loc::getMessage('ERROR__IS_NOT_ARRAY', ['#FIELD#' => $field]),
+          );
+        }
+      }
+
+      /** Check uuid filed */
+      if (
+        self::getArPropertiesTypes($field)['UUID']
+        && !preg_match(Helper::UUID_PATTERN, $arActivityPropByApp['Properties'][$field])
+      ) {
+        $arErrors[] = array(
+          'code' => 'Empty',
+          'message' => Loc::getMessage('ERROR__IS_NOT_UUID', ['#FIELD#' => $field]),
+        );
+      }
+
+      $arProperties[$field] = $arActivityPropByApp['Properties'][$field];
+    }
 
     if ($arErrors) {
       return false;
     }
-
-    // WorkflowTemplateTable::class
 
     $arCurrentActivity = &CBPWorkflowTemplateLoader::FindActivityByName(
       $arWorkflowTemplate,
@@ -404,43 +390,6 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
     $arCurrentActivity['Properties'] = $arProperties;
 
     return true;
-
-    // $dialog = new PropertiesDialog(static::getFileName(), [
-    //   'documentType' => $documentType,
-    //   'activityName' => $activityName,
-    //   'workflowTemplate' => $workflowTemplate,
-    //   'workflowParameters' => $workflowParameters,
-    //   'workflowVariables' => $workflowVariables,
-    //   'currentValues' => $currentValues,
-    // ]);
-
-    // $extractingResult = static::extractPropertiesValues($dialog, static::getPropertiesDialogMap($dialog));
-    // if (!$extractingResult->isSuccess()) {
-    //   foreach ($extractingResult->getErrors() as $error) {
-    //     $errors[] = [
-    //       'code' => $error->getCode(),
-    //       'message' => $error->getMessage(),
-    //       'parameter' => $error->getCustomData(),
-    //     ];
-    //   }
-    // } else {
-    //   $errors = static::ValidateProperties(
-    //     $extractingResult->getData(),
-    //     new \CBPWorkflowTemplateUser(\CBPWorkflowTemplateUser::CurrentUser)
-    //   );
-    // }
-
-    // if ($errors) {
-    //   return false;
-    // }
-
-    // $currentActivity = &\CBPWorkflowTemplateLoader::FindActivityByName(
-    //   $workflowTemplate,
-    //   $activityName
-    // );
-    // $currentActivity['Properties'] = $extractingResult->getData();
-
-    // return true;
   }
 
   public static function sendMessage(array $queryData): array
@@ -456,38 +405,53 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
       return [];
     }
 
-    return json_decode($queryToWassup, true);
-  }
-
-  protected static function getArProperties()
-  {
     return [
-      'CrmContactId' => '',
-      'WhatsappMessageTemplateGUID' => '',
-      // 'WhatsappMessageTemplateCode' => '',
-      'WhatsappMessageBodyValues' => '',
-      'WhatsappChannelId' => '',
+      'data' => json_decode($queryToWassup, true),
+      'status' => $httpClient->getStatus(),
     ];
   }
 
-  protected static function getArPropertiesTypes()
+  protected static function getArProperties($field = null)
   {
-    return [
+    $data = [
+      'CrmContactId' => '',
+      'WhatsappMessageTemplateGUID' => '',
+      'WhatsappMessageBodyValues' => '',
+      'WhatsappChannelId' => '',
+    ];
+
+    return $field ? $data[$field] : $data;
+  }
+
+  protected static function getArPropertiesTypes($field = null)
+  {
+    $data = [
       'CrmContactId' => [
         'Type' => FieldType::INT
       ],
       'WhatsappMessageTemplateGUID' => [
-        'Type' => FieldType::STRING
+        'Type' => FieldType::STRING,
+        'UUID' => true
       ],
-      // 'WhatsappMessageTemplateCode' => [
-      //   'Type' => FieldType::TEXT
-      // ],
       'WhatsappMessageBodyValues' => [
-        'Type' => FieldType::TEXT
+        'Type' => FieldType::TEXT,
+        'Array' => true,
       ],
       'WhatsappChannelId' => [
-        'Type' => FieldType::STRING
+        'Type' => FieldType::STRING,
+        'UUID4' => true
       ],
+    ];
+
+    return $field ? $data[$field] : $data;
+  }
+
+  protected static function getAppFields()
+  {
+    return [
+      'WhatsappMessageTemplateGUID',
+      'WhatsappMessageBodyValues',
+      'WhatsappChannelId',
     ];
   }
 }

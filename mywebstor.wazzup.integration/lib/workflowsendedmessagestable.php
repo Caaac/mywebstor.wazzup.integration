@@ -15,6 +15,12 @@ Loc::loadMessages(__FILE__);
 
 class WorkflowSendedMessagesTable extends DataManager
 {
+
+  const STATUS_WAIT_ANSWER = 0;
+  const STATUS_NOT_ANSWERED = 1;
+  const STATUS_ANSWERED = 2;
+  const STATUS_ERROR = 3;
+
   public static function getTableName()
   {
     return 'mwi_bp_workflow_sended_messages';
@@ -46,37 +52,49 @@ class WorkflowSendedMessagesTable extends DataManager
         ->configureSize(36)
         ->configureTitle(Loc::getMessage('MWI_MESSAGE_TEMPLATE_ID_FIELD')),
 
-      'SENDER_ID' => (new IntegerField('SENDER_ID'))
-        ->configureRequired()
-        ->configureTitle(Loc::getMessage('MWI_SENDER_ID_FIELD')),
-
       'CHANEL_ID' => (new StringField('CHANEL_ID'))
+        ->configureRequired()
         ->configureSize(36)
         ->configureTitle(Loc::getMessage('MWI_CHANEL_ID_FIELD')),
 
       'CHAT_ID' => (new StringField('CHAT_ID'))
-        ->configureSize(36)
+        ->configureRequired()
+        ->configureSize(20)
         ->configureTitle(Loc::getMessage('MWI_CHAT_ID_FIELD')),
+
+      'SEND_MESSAGE_ID' => (new StringField('SEND_MESSAGE_ID'))
+        ->configureSize(36)
+        ->configureTitle(Loc::getMessage('MWI_SEND_MESSAGE_ID_FIELD')),
+
+      'MESSAGE_STATUS' => (new IntegerField('MESSAGE_STATUS'))
+        ->configureSize(2)
+        ->configureTitle(Loc::getMessage('MWI_MESSAGE_STATUS_FIELD')),
+
+      'STATUS' => (new IntegerField('STATUS'))
+        ->configureRequired()
+        ->configureSize(2)
+        ->configureDefaultValue(self::STATUS_WAIT_ANSWER)
+        ->configureTitle(Loc::getMessage('MWI_STATUS_FIELD')),
 
       'ANSWERED_MESSAGE' => (new TextField('ANSWERED_MESSAGE'))
         ->configureTitle(Loc::getMessage('MWI_ANSWERED_MESSAGE_FIELD')),
 
-      'MESSAGE_ID' => (new StringField('MESSAGE_ID'))
+      'ANSWERED_MESSAGE_ID' => (new StringField('ANSWERED_MESSAGE_ID'))
         ->configureSize(36)
-        ->configureTitle(Loc::getMessage('MWI_MESSAGE_ID_FIELD')),
+        ->configureTitle(Loc::getMessage('MWI_ANSWERED_MESSAGE_ID_FIELD')),
 
       'DATE_SEND' => (new DatetimeField('DATE_SEND'))
         ->configureRequired()
         ->configureDefaultValue(new \Bitrix\Main\Type\DateTime())
-        // ->configureDefaultValueNow()
+        // ->configureDefaultValueNow() // TODO почему не работает?
         ->configureTitle(Loc::getMessage('MWI_DATE_SEND_FIELD')),
 
       'DATE_ANSWER' => (new DatetimeField('DATE_ANSWER'))
         ->configureTitle(Loc::getMessage('MWI_DATE_ANSWER_FIELD')),
 
-        /**
-         * References
-         */
+      /**
+     * References
+     */
     ];
   }
 }

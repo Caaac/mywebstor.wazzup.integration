@@ -23,6 +23,18 @@ $iframeUrl .= '/mywebstor_wazzup_integration/apps/getter_whatsapp_message/';
       ?>
     </td>
   </tr>
+  <!-- <tr>
+    <td align="right" width="40%"><span class="adm-required-field">WhatsappMessageBodyValues:</span>
+    </td>
+    <td width="60%">
+      <?= CBPDocument::ShowParameterField(
+        'string',
+        'WhatsappMessageBodyValues',
+        $arCurrentValues['WhatsappMessageBodyValues']
+      )
+      ?>
+    </td>
+  </tr> -->
   <tr>
     <td align="right" width="40%"><span class="adm-required-field">WhatsappMessageTemplateGUID:</span>
     </td>
