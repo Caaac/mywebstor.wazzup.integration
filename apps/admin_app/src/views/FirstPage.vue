@@ -3,8 +3,9 @@
 import TabView from 'primevue/tabview';
 import TabPanel from 'primevue/tabpanel';
 /* Custom componenst */
-import Main from '@/components/first-page/Main.vue';
-import Settings from '@/components/first-page/Settings.vue';
+import Main from '@/components/Main.vue';
+import Newsletter from '@/components/Newsletter.vue';
+import Settings from '@/components/Settings.vue';
 /* Pinia store */
 import { rootStore } from '@/stores/index';
 /* Router */
@@ -17,8 +18,6 @@ const store = rootStore()
 // const confirm = useConfirm();
 
 onMounted(async () => {
-  console.log('onMounted');
-
   await store.init()
 })
 
@@ -29,6 +28,9 @@ onMounted(async () => {
     <TabView>
       <TabPanel header="Главная">
         <Main />
+      </TabPanel>
+      <TabPanel header="Генерация рассылки">
+        <Newsletter />
       </TabPanel>
       <TabPanel header="Настройки">
         <Settings />

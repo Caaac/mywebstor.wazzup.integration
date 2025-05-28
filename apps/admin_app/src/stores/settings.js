@@ -13,7 +13,7 @@ export const settingsStore = defineStore('settings', () => {
   })
 
   const init = async (loading = true) => {
-    store.loading = loading;
+    store.loading.settings = loading;
     return new Promise((resolve, reject) => {
 
       const cmd = {}
@@ -50,7 +50,7 @@ export const settingsStore = defineStore('settings', () => {
 
           params.value.API_KEY = responce.apiKey.data();
 
-          store.loading = false;
+          store.loading.settings = false;
           hasChanges.value = false
           resolve(true)
         }
@@ -60,7 +60,7 @@ export const settingsStore = defineStore('settings', () => {
 
 
   const save = async (reload = false, loading = true) => {
-    store.loading = loading;
+    store.loading.settings = loading;
     return new Promise((resolve, reject) => {
 
       const cmd = {}
@@ -87,7 +87,7 @@ export const settingsStore = defineStore('settings', () => {
             }
           });
 
-          store.loading = false;
+          store.loading.settings = false;
           hasChanges.value = false;
 
           if (reload) await init();

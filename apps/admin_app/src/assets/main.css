@@ -1,17 +1,22 @@
-
 #app {
   background: white;
+  height: 800px;
 }
 
 #app,
 #first-page,
 #first-page .p-tabview,
-#first-page .p-tabview-panels,
-#first-page .p-tabview-panel,
-#main-tab,
-#settings-tab {
+#first-page .p-tabview-panel {
   min-height: 600px;
   height: 100% !important;
+}
+
+#settings-tab {
+  height: 750px !important;
+}
+
+#first-page .p-tabview-panels {
+  height: calc(100% - 50px) !important;
 }
 
 a {

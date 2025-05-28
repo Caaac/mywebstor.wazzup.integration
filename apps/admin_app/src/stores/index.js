@@ -1,30 +1,35 @@
 import { defineStore } from 'pinia'
 import { helperStore } from './helper'
 import { settingsStore } from './settings'
-import { firstPageStore } from './first-page'
+import { newsletterStore } from './newsletter'
 
 import { ref } from 'vue'
 
 export const rootStore = defineStore('root', () => {
 
-  const loading = ref(false)  
-  
+  const loading = ref({
+    'settings': false,
+    'newsletter': false,
+  })
+
   const init = async () => {
     await settings().init();
   }
 
-  const firstPage = () => {
-    return firstPageStore()
-  }
+  const helper = () => helperStore()
+  const settings = () => settingsStore()
+  const newsletter = () => newsletterStore()
 
-  const settings = () => {
-    return settingsStore()
+  return {
+    /* State */
+    loading,
+    /* Methods */
+    /* Computed */
+    /* Store refs */
+    helper,
+    init,
+    settings,
+    newsletter
   }
-  
-  const helper = () => {
-    return helperStore()
-  }
-
-  return { loading, init, firstPage, settings, helper }
 })
 
