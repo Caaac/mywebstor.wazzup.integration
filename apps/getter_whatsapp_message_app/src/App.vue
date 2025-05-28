@@ -51,9 +51,9 @@ const save = () => {
   store.message().save().then(() => {
     store.helper().successToast('Сохранено')
   })
-  .catch(error => {
-    store.helper().errorToast(error)
-  })
+    .catch(error => {
+      store.helper().errorToast(error)
+    })
 }
 
 watch(splitedBodyMessage, (newValue) => {
@@ -97,19 +97,26 @@ watch(splitedBodyMessage, (newValue) => {
 
       <div class="settings-menu-item">
         <FloatLabel>
-          <Dropdown v-model="params.activityProperties.WhatsappChannelId" :options="params.chanels"
-            id="waba-chanel" optionLabel="name" optionValue="channelId" placeholder="Выберете отправителя"
-            class="input-field" />
+          <Dropdown v-model="params.activityProperties.WhatsappChannelId" :options="params.chanels" id="waba-chanel"
+            optionLabel="name" optionValue="channelId" placeholder="Выберете отправителя" class="input-field" />
           <label for="waba-chanel">От кого писать</label>
         </FloatLabel>
       </div>
-     
-      <div class="settings-menu-item">
+
+      <div class="settings-menu-item item-margin">
         <FloatLabel>
           <Dropdown v-model="params.activityProperties.WhatsappMessageTemplateGUID" :options="params.templates"
             id="waba-tmpl" optionLabel="title" optionValue="templateGuid" placeholder="Выберете шаблон сообщения"
             class="input-field" />
           <label for="waba-tmpl">Шаблон сообщения</label>
+        </FloatLabel>
+      </div>
+
+      <div class="settings-menu-item item-margin">
+        <FloatLabel>
+          <InputText v-model="params.activityProperties.ReservePhone" id="waba-reserve-phone"
+            placeholder="Выберете телефон по умолчанию" class="input-field" />
+          <label for="waba-reserve-phone">Номер телефона (если не получится определить)</label>
         </FloatLabel>
       </div>
 
@@ -149,7 +156,7 @@ watch(splitedBodyMessage, (newValue) => {
       <Button v-if="params.selectedTemplate" @click="save" label="Сохранить" />
     </footer>
   </div>
-  
+
   <Toast />
 </template>
 
@@ -164,6 +171,10 @@ watch(splitedBodyMessage, (newValue) => {
 
 #settings-menu .settings-menu-container .settings-menu-item {
   margin-bottom: 20px;
+}
+
+#settings-menu .settings-menu-container .settings-menu-item.item-margin {
+  margin-top: 30px;
 }
 
 #settings-menu .settings-menu-container .settings-menu-item .input-field {

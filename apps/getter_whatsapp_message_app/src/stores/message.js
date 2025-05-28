@@ -37,7 +37,7 @@ export const messageStore = defineStore('message', () => {
 
     cmd['activityProperties'] = ['mwi.activity.settings.get', {
       activityName: store.activityId,
-      select: ['WhatsappMessageTemplateGUID', 'WhatsappMessageBodyValues', 'WhatsappChannelId']
+      select: ['ReservePhone', 'WhatsappMessageTemplateGUID', 'WhatsappMessageBodyValues', 'WhatsappChannelId']
       // select: ['WhatsappMessageTemplateGUID', 'WhatsappMessageTemplateCode', 'WhatsappMessageBodyValues', 'WhatsappChannelId]
     }]
 
@@ -72,6 +72,7 @@ export const messageStore = defineStore('message', () => {
       {
         activityName: store.activityId,
         activityProperties: {
+          ReservePhone: params.value.activityProperties.ReservePhone,
           WhatsappMessageTemplateGUID: params.value.selectedTemplate.templateGuid,
           // WhatsappMessageTemplateCode: params.value.selectedTemplate.templateCode,
           WhatsappMessageBodyValues: JSON.stringify(params.value.variables.body),
@@ -89,7 +90,10 @@ export const messageStore = defineStore('message', () => {
       template => template.templateGuid == params.value.activityProperties.WhatsappMessageTemplateGUID
     )[0]
 
-    params.value.selectedTemplate = JSON.parse(JSON.stringify(template));
+    if (template) {
+      params.value.selectedTemplate = JSON.parse(JSON.stringify(template));
+    }
+
   }
 
   watch(

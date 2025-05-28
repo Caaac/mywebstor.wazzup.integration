@@ -4,10 +4,10 @@ namespace Mywebstor\Wazzup\Integration\Rest;
 
 /* Module classes */
 
-use Bitrix\Main\Application;
 use Mywebstor\Wazzup\Integration\Helper;
 
 /* Bitrix classes */
+use Bitrix\Main\Application;
 use \Bitrix\Rest\RestException;
 use \Bitrix\Main\Web\HttpClient;
 
@@ -69,27 +69,20 @@ class Integration extends \IRestService
       'subscriptions' => $settings
     ];
 
-    /** PATCH в HttpClient нету */
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, Helper::getWazzupWebhook());
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PATCH");
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-      'Content-Type: application/json',
-      'Authorization: Bearer ' . $apiKey
-    ]);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    $response = curl_exec($ch);
+    $httpClient = new HttpClient(['socketTimeout' => 15]);
 
-    if ($response === false) {
-      throw new RestException(curl_error($ch), 500);
-      curl_close($ch);
+    $httpClient
+      ->setHeaders([
+        'Content-Type' => 'application/json',
+        'Authorization' => 'Bearer ' . $apiKey,
+      ])
+      ->query($httpClient::HTTP_PATCH, Helper::getWazzupWebhook(), json_encode($data));
+
+    if ($httpClient->getResult() != 'OK') {
+      throw new RestException($httpClient->getError(), $httpClient->getStatus());
       return false;
     }
 
-    curl_close($ch);
     return true;
-
-    // return Helper::setWazzupWebhook($query);
   }
 }

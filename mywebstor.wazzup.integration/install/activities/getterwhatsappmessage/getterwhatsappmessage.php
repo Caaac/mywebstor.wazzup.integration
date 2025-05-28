@@ -1,6 +1,7 @@
 <?
 
 /* Modules classes */
+
 use Mywebstor\Wazzup\Integration\Helper;
 use Mywebstor\Wazzup\Integration\WorkflowSendedMessagesTable;
 
@@ -50,16 +51,23 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
     $this->Subscribe($this);
 
     /** @var array $phones */
-    $phones = $this->ParseValue('{'.'=Document:PHONE}');
+    $phones = $this->ParseValue('{' . '=Document:PHONE}');
+
+    /** @var string $phone */
+    $phone = $phones ? array_shift($phones)['VALUE'] : $this->ParseValue($this->ReservePhone);
+
+    if (empty($phone)) {
+      $this->WriteToTrackingService(Loc::getMessage('ERROR__ACTIVITY_EMPTY_PHONES'));
+      return CBPActivityExecutionStatus::Closed;
+    }
 
     /** @var string $chatId */
-    $chatId = array_shift($phones)['VALUE'];
-    $chatId = preg_replace('![^0-9]+!', '', $chatId);
+    $chatId = preg_replace('![^0-9]+!', '', $phone);
 
     $queryData = [
       'channelId' => $this->WhatsappChannelId,
       'chatType' => 'whatsapp',
-      'chatId' => $chatId, // TODO
+      'chatId' => $chatId,
       'templateId' => $this->WhatsappMessageTemplateGUID,
       'templateValues' => []
     ];
@@ -78,7 +86,7 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
       'ACTIVITY_NAME' => $this->name,
       'MESSAGE_TEMPLATE_ID' => $this->WhatsappMessageTemplateGUID,
       'CHANEL_ID' => $this->WhatsappChannelId,
-      'CHAT_ID' => $chatId, // TODO
+      'CHAT_ID' => $chatId,
       'MESSAGE_STATUS' => null,
       'SEND_MESSAGE_ID' => null,
       'STATUS' => WorkflowSendedMessagesTable::STATUS_WAIT_ANSWER,
@@ -312,12 +320,7 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
     //   // 'arErrors' => $arErrors,
     // ], '__SECOND');
 
-    $arProperties = array(
-      'CrmContactId' => $arCurrentValues['CrmContactId'],
-      'WhatsappMessageTemplateGUID' => '',
-      'WhatsappMessageBodyValues' => '',
-      'WhatsappChannelId' => '',
-    );
+    $arProperties = self::getArProperties();
 
     $wf = CBPWorkflowTemplateLoader::GetList(
       [],
@@ -414,7 +417,8 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
   protected static function getArProperties($field = null)
   {
     $data = [
-      'CrmContactId' => '',
+      // 'CrmContactId' => '',
+      'ReservePhone' => '',
       'WhatsappMessageTemplateGUID' => '',
       'WhatsappMessageBodyValues' => '',
       'WhatsappChannelId' => '',
@@ -426,8 +430,8 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
   protected static function getArPropertiesTypes($field = null)
   {
     $data = [
-      'CrmContactId' => [
-        'Type' => FieldType::INT
+      'ReservePhone' => [
+        'Type' => FieldType::STRING
       ],
       'WhatsappMessageTemplateGUID' => [
         'Type' => FieldType::STRING,
@@ -449,6 +453,7 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
   protected static function getAppFields()
   {
     return [
+      'ReservePhone',
       'WhatsappMessageTemplateGUID',
       'WhatsappMessageBodyValues',
       'WhatsappChannelId',
