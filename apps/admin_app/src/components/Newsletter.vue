@@ -1,6 +1,7 @@
 <script setup>
 import Button from 'primevue/button';
 import Column from "primevue/column";
+import Calendar from 'primevue/calendar';
 import Dropdown from "primevue/dropdown";
 import DataTable from "primevue/datatable";
 import MultiSelect from 'primevue/multiselect';
@@ -20,7 +21,7 @@ const invalid = ref({
 })
 
 onMounted(() => {
-  store.newsletter().init();
+  store.newsletter().init(true);
 });
 
 const appointments = computed(() => {
@@ -61,6 +62,11 @@ const workflowStart = async () => {
           placeholder="Выберите бизнес-процесс" style="width: 300px" />
         <MultiSelect v-model="filter.DOCTORS" :options="params.DOCTORS" optionLabel="FULL_NAME" optionValue="ID" filter
           placeholder="Выберите врача" style="width: 300px; margin-left: 20px" />
+        <Calendar v-model="params.APPOINTMENT_DATE" dateFormat="dd.mm.yy" style="width: 300px; margin-left: 20px">
+          <template #footer>
+            <Button @click="store.newsletter().reloadData()" label="Применить" />
+          </template>
+        </Calendar>
       </div>
       <Button @click="workflowStart" label="Запустить бизнес процессы" />
     </div>

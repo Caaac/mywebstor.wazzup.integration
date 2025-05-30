@@ -21,7 +21,18 @@ export const newsletterStore = defineStore('newsletter', () => {
   const init = async (loading = true) => {
     store.loading.newsletter = loading;
 
-    params.value.APPOINTMENT_DATE = moment().add(1, 'day').format('YYYY-MM-DD')
+    // params.value.APPOINTMENT_DATE = appointmentDate ? appointmentDate : params.value.APPOINTMENT_DATE;
+    params.value.APPOINTMENT_DATE = moment().add(1, 'day').toDate();
+
+    return new Promise((resolve, reject) => {
+      reloadData()
+        .then(res => { resolve(res) })
+        .catch(err => { reject(err) })
+    })
+  }
+
+  const reloadData = async (loading = true) => {
+    store.loading.newsletter = loading;
 
     return new Promise((resolve, reject) => {
 
@@ -29,7 +40,7 @@ export const newsletterStore = defineStore('newsletter', () => {
 
       cmd["appointments"] = ['mwi.hms.appointment.get', {
         filter: {
-          date: params.value.APPOINTMENT_DATE
+          appointment_date: moment(params.value.APPOINTMENT_DATE.toISOString()).format('YYYY-MM-DD')
         }
       }]
 
@@ -106,6 +117,6 @@ export const newsletterStore = defineStore('newsletter', () => {
     })
   }
 
-  return { init, params, filter, saveBizproc, selectedAppointments, workflowStart }
+  return { init, params, filter, saveBizproc, selectedAppointments, workflowStart, reloadData }
 })
 
