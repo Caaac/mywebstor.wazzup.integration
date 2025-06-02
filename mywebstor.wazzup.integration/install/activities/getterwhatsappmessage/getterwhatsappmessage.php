@@ -18,7 +18,10 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
   const STATUS_SUCCESS = 'success';
   const STATUS_ERROR = 'error';
 
+  /** @var int $stage | 0 - not running; 1 - running; 2 - event completed */
+  private $stage = 0;
   private $status = null;
+  private $agentId = null;
 
   function __construct($name)
   {
@@ -111,9 +114,28 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
 
     $resultAdd = WorkflowSendedMessagesTable::add($data);
 
+
     if (!$resultAdd->isSuccess()) {
       throw new \Exception(Loc::getMessage('ERROR__MESSAGE_NOT_ADD_TO_TABLE') . ' \n ' . $resultAdd->getErrorMessages()[0]);
     }
+
+    $this->stage = 1;
+
+    $nextExec = (new \Bitrix\Main\Type\DateTime())->add('1 day');
+
+    $this->agentId = CAgent::AddAgent(
+      "Mywebstor\Wazzup\Integration\Agents\Message::terminateWorkflow('" . $this->workflow->getInstanceId() . "');",
+      "mywebstor.wazzup.integration",
+      "N",
+      60,
+      $nextExec,
+      'Y',
+      $nextExec,
+      100,
+      (new \Bitrix\Main\Type\DateTime())->getTimestamp(),
+      false
+    );
+
 
     if ($this->status >= 400) {
       CBPRuntime::SendExternalEvent(
@@ -128,31 +150,6 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
 
       return CBPActivityExecutionStatus::Closed;
     }
-
-    // AddMessage2Log([
-    //   '$this' => $this,
-    //   '$$document' => $document,
-    //   '$documentId' => $documentId,
-    //   'name' => $this->name,
-    //   'workflow' => $this->workflow,
-    //   'arProperties' => $this->arProperties,
-    //   'arPropertiesTypes' => $this->arPropertiesTypes,
-    //   'documentService' => $this->documentService,
-    //   'taskService' => $this->taskService,
-    // ], 'documentId');
-
-    // $rootActivity = $this->GetRootActivity();
-    // $documentId = $rootActivity->GetDocumentId();
-    // $runtime = CBPRuntime::GetRuntime();
-    // $documentService = $runtime->GetService('DocumentService');
-    // $taskService = $this->workflow->GetService('TaskService');
-
-    // $document = $documentService->getDocument($documentId);
-
-    // $companyId = $document['ID'];
-
-    // $activityName = $this->name;
-    // $workflowId = $this->workflow->getInstanceId();
 
     return CBPActivityExecutionStatus::Executing;
   }
@@ -190,8 +187,19 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
 
     self::includeModules();
     $this->Unsubscribe($this);
+    $this->deleteAgent();
 
-    AddMessage2Log('!Cancel');
+    if ($this->stage == 1) {
+      $queryWSMT = WorkflowSendedMessagesTable::query()
+        ->setSelect(['ID'])
+        ->setFilter([
+          'WORKFLOW_ID' => $this->workflow->getInstanceId(),
+        ]);
+
+      if ($wsmtObj = $queryWSMT->fetchObject()) {
+        $wsmtObj->setStatus(WorkflowSendedMessagesTable::STATUS_CANCELED)->save();
+      }
+    }
 
     $this->WriteToTrackingService(Loc::getMessage('MWI_ACTIVITY_CANCEL'));
 
@@ -222,10 +230,13 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
   {
     self::includeModules();
 
+    $this->stage = 2;
     $this->STATUS = $this->status < 400 ? self::STATUS_SUCCESS : self::STATUS_ERROR;
     $this->STATUS_CODE = $this->status;
     $this->ANSWERED_MESSAGE = $arEventParameters['ANSWERED_MESSAGE'];
     $this->ANSWERED_MESSAGE_ID = $arEventParameters['ANSWERED_MESSAGE_ID'];
+
+    $this->deleteAgent();
 
     AddMessage2Log($arEventParameters, 'OnExternalEvent params');
 
@@ -243,7 +254,6 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
    */
   public function Unsubscribe(IBPActivityExternalEventListener $eventHandler, int $status = 2)
   {
-    AddMessage2Log($eventHandler, '!Unsubscribe');
     $this->workflow->RemoveEventHandler($this->name, $eventHandler);
   }
 
@@ -275,18 +285,6 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
       }
     }
 
-    // AddMessage2Log([
-    //   'documentType' => $documentType,
-    //   'activityName' => $activityName,
-    //   'arWorkflowTemplate' => $arWorkflowTemplate,
-    //   'workflowParameters' => $workflowParameters,
-    //   'workflowVariables' => $workflowVariables,
-    //   'arCurrentValues' => $arCurrentValues,
-    //   'formName' => $formName,
-    //   'popupWindow' => $popupWindow,
-    //   'siteId' => $siteId,
-    // ], '__FIRST');
-
     $runtime = CBPRuntime::GetRuntime();
     return $runtime->ExecuteResourceFile(
       __FILE__,
@@ -309,16 +307,6 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
   ): bool {
 
     self::includeModules();
-
-    // AddMessage2Log([
-    //   'documentType' => $documentType,
-    //   'activityName' => $activityName,
-    //   'arWorkflowTemplate' => $arWorkflowTemplate,
-    //   'arWorkflowParameters' => $arWorkflowParameters,
-    //   'arWorkflowVariables' => $arWorkflowVariables,
-    //   'arCurrentValues' => $arCurrentValues,
-    //   // 'arErrors' => $arErrors,
-    // ], '__SECOND');
 
     $arProperties = self::getArProperties();
 
@@ -412,6 +400,14 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
       'data' => json_decode($queryToWassup, true),
       'status' => $httpClient->getStatus(),
     ];
+  }
+
+  private function deleteAgent()
+  {
+    if ($this->agentId) {
+      CAgent::Delete($this->agentId);
+      $this->agentId = null;
+    }
   }
 
   protected static function getArProperties($field = null)

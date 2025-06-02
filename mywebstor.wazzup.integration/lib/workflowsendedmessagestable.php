@@ -20,6 +20,7 @@ class WorkflowSendedMessagesTable extends DataManager
   const STATUS_NOT_ANSWERED = 1;
   const STATUS_ANSWERED = 2;
   const STATUS_ERROR = 3;
+  const STATUS_CANCELED = 4;
 
   public static function getTableName()
   {
