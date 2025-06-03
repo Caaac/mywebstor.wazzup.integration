@@ -26,7 +26,7 @@ onMounted(() => {
 
 const appointments = computed(() => {
   return (params.value?.APPOINTMENTS || []).filter(item => {
-    return !filter.value.DOCTORS.length || filter.value.DOCTORS.includes(item.DOCKTOR_ID)
+    return !filter.value.DOCTORS.length || filter.value.DOCTORS.includes(String(item.DOCKTOR_ID))
   })
 })
 
@@ -96,6 +96,7 @@ const workflowStart = async () => {
         </template>
       </Column>
     </DataTable>
+
   </div>
 </template>
 

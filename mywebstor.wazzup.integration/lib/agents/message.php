@@ -8,6 +8,13 @@ class Message
   {
     if (!$workflowId) return '';
 
+    // TODO: delete
+    \Bitrix\Main\Diag\Debug::writeToFile(print_r([
+        'method' => '\Mywebstor\Wazzup\Integration\Agents\Message::terminateWorkflow',
+        'status' => 'TERINATE_AGENT',
+        'workflowId' => $workflowId,
+      ], true), "", "__mwi__agent_terminate__.log");
+
     $status = '';
     $errors = [];
 
@@ -19,7 +26,7 @@ class Message
         'status' => 'ERROR',
         'workflowId' => $workflowId,
         'errors' => $errors
-      ], true), "", "__mwi_error__.log");
+      ], true), "", "__mwi__error__.log");
 
       return '';
     }

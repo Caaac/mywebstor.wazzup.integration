@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { rootStore } from './index'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import moment from 'moment';
 
 export const newsletterStore = defineStore('newsletter', () => {

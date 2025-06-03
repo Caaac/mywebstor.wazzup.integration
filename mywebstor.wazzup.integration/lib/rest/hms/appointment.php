@@ -92,7 +92,7 @@ class Appointment extends \IRestService
       ->setSelect(['ID', 'DOCTOR_ID', 'DATE_FROM', 'DATE_CREATE', 'DOCTOR', 'DOCTOR.USER', 'CONTACT_ID'])
       ->setFilter([
         '!CONTACT_ID' => null,
-        'DATE_FROM_STR' => $selectedDate->format('d.m.Y'),
+        '=DATE_FROM_STR' => $selectedDate->format('d.m.Y'),
         '!DATE_CREATE_STR' => (new DateTime())->format('d.m.Y'),
       ]);
 
