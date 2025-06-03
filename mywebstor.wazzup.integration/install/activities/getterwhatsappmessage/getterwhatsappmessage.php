@@ -26,8 +26,18 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
   function __construct($name)
   {
     parent::__construct($name);
-    $this->arProperties = self::getArProperties();
-    $this->SetPropertiesTypes(self::getArPropertiesTypes());
+    
+    $this->arProperties = array_merge(
+      self::getArProperties(), 
+      self::returnProperties()
+    );
+
+    $this->SetPropertiesTypes(
+      array_merge(
+        self::getArPropertiesTypes(), 
+        self::returnPropertiesType(), 
+      )
+    );
   }
 
   protected static function includeModules()
@@ -453,6 +463,34 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
       'WhatsappMessageTemplateGUID',
       'WhatsappMessageBodyValues',
       'WhatsappChannelId',
+    ];
+  }
+
+  protected static function returnProperties()
+  {
+    return [
+      'ANSWERED_MESSAGE' => '',
+      'ANSWERED_MESSAGE_ID' => '',
+      'STATUS' => '',
+      'STATUS_CODE' => '',
+    ];
+  }
+
+  protected static function returnPropertiesType()
+  {
+    return [
+      'ANSWERED_MESSAGE' => [
+        'Type' => FieldType::TEXT
+      ],
+      'ANSWERED_MESSAGE_ID' => [
+        'Type' => FieldType::INT
+      ],
+      'STATUS' => [
+        'Type' => FieldType::STRING
+      ],
+      'STATUS_CODE' => [
+        'Type' => FieldType::INT
+      ],
     ];
   }
 }
