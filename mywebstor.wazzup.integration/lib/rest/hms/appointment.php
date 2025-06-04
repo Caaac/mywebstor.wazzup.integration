@@ -8,15 +8,16 @@ namespace Mywebstor\Wazzup\Integration\Rest\Hms;
 use \MyWebstor\Hms\AppointmentTable;
 
 /* Bitrix classes */
-/* -- Bizproc --  */
+/* -- Rest --  */
+use Bitrix\Rest\RestException;
+/* -- Iblock --  */
+use Bitrix\Iblock\PropertyTable;
 /* -- e.t.c. --  */
 use CIBlockElement;
 use DateTimeInterface;
 use Bitrix\Crm\PhaseSemantics;
-use Bitrix\Rest\RestException;
 use Bitrix\Main\Type\DateTime;
 use Bitrix\Main\Config\Option;
-use Bitrix\Iblock\PropertyTable;
 use Bitrix\Main\Entity\ExpressionField;
 
 class Appointment extends \IRestService
@@ -49,13 +50,17 @@ class Appointment extends \IRestService
       ? new DateTime($query['filter']['appointment_date'], DateTimeInterface::ATOM)
       : (new DateTime())->add('+1 day');
 
+    /** 
+     * (clone $selectedDate)->add('-1 day') => Потому что в графике отсуствий стоит по 29.05.2025, 
+     * а DATE_ACTIVE_FROM хранит по 29.05.2025 00:00:00, а не 23:59:59 
+     */
     $absencesObj = CIBlockElement::GetList(
       [],
       [
         'IBLOCK_ID' => $absenceIblockId,
         'ACTIVE' => 'Y',
         '<=DATE_ACTIVE_FROM' => $selectedDate,
-        '>=DATE_ACTIVE_TO' => (clone $selectedDate)->add('-1 day'), // Потому что в графике отсуствий стоит по 29.05.2025, а DATE_ACTIVE_FROM хранит по 29.05.2025 00:00:00, а не 23:59:59
+        '>=DATE_ACTIVE_TO' => (clone $selectedDate)->add('-1 day'),
       ]
     );
 
@@ -70,10 +75,17 @@ class Appointment extends \IRestService
     $absences = [];
     while ($absence = $absencesObj->GetNext()) $absences[] = $absence;
 
-    $elProps = CIBlockElement::GetPropertyValues($absenceIblockId, ['ID' => array_column($absences, 'ID')], false, ['ID' => $userPropId]);
-
     $userIsAbsense = [];
-    while ($el = $elProps->GetNext()) $userIsAbsense[] = $el[$userPropId];
+
+    if (count($absences)) {
+      $elProps = CIBlockElement::GetPropertyValues(
+        $absenceIblockId, 
+        ['ID' => array_column($absences, 'ID')], 
+        false, 
+        ['ID' => $userPropId]
+      );
+      while ($el = $elProps->GetNext()) $userIsAbsense[] = $el[$userPropId];
+    }
 
     $query = AppointmentTable::query()
       ->registerRuntimeField(
@@ -91,13 +103,13 @@ class Appointment extends \IRestService
         )
       )
       ->setSelect([
-        'ID', 
-        'DOCTOR_ID', 
-        'DATE_FROM', 
-        'DATE_CREATE', 
-        'DOCTOR', 
-        'DOCTOR.USER', 
-        'CONTACT_ID', 
+        'ID',
+        'DOCTOR_ID',
+        'DATE_FROM',
+        'DATE_CREATE',
+        'DOCTOR',
+        'DOCTOR.USER',
+        'CONTACT_ID',
         'CONTACT',
         'STATUS',
       ])
@@ -106,7 +118,8 @@ class Appointment extends \IRestService
         '=DATE_FROM_STR' => $selectedDate->format('d.m.Y'),
         '!DATE_CREATE_STR' => (new DateTime())->format('d.m.Y'),
         '!=STATUS.SEMANTICS' => PhaseSemantics::FAILURE,
-      ]);
+      ])
+      ->setOrder(['ID' => 'DESC']);
 
     $result = [];
 
@@ -120,9 +133,9 @@ class Appointment extends \IRestService
         'DOCKTOR_NAME' => $obj->getDoctor()->getUser()->getName(),
         'DOCKTOR_LAST_NAME' => $obj->getDoctor()->getUser()->getLastName(),
         'DOCKTOR_SECOND_NAME' => $obj->getDoctor()->getUser()->getSecondName(),
-        'CONTACT_FULL_NAME' => 
-          $obj->getContact()->getLastName() . ' ' . 
-          $obj->getContact()->getName() . ' ' . 
+        'CONTACT_FULL_NAME' =>
+        $obj->getContact()->getLastName() . ' ' .
+          $obj->getContact()->getName() . ' ' .
           $obj->getContact()->getSecondName(),
         'DATE_FROM' => $obj->getDateFrom()->format(DateTimeInterface::ATOM),
         'DATE_CREATE' => $obj->getDateCreate()->format(DateTimeInterface::ATOM),
