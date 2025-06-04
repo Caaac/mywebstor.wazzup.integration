@@ -9,6 +9,8 @@ use Mywebstor\Wazzup\Integration\WorkflowSendedMessagesTable;
 use Bitrix\Bizproc\FieldType;
 use Bitrix\Main\Web\HttpClient;
 use Bitrix\Main\Localization\Loc;
+use Bitrix\Main\PhoneNumber\Format;
+use Bitrix\Main\PhoneNumber\Parser;
 
 Loc::loadMessages(__FILE__);
 
@@ -68,14 +70,17 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
 
     /** @var string $phone */
     $phone = $phones ? array_shift($phones)['VALUE'] : $this->ParseValue($this->ReservePhone);
+    $phone = preg_replace('![^0-9]+!', '', $phone);
 
     if (empty($phone)) {
       $this->WriteToTrackingService(Loc::getMessage('ERROR__ACTIVITY_EMPTY_PHONES'));
       return CBPActivityExecutionStatus::Closed;
     }
 
+    $parsedPhone = Parser::getInstance()->parse($phone);
+
     /** @var string $chatId */
-    $chatId = preg_replace('![^0-9]+!', '', $phone);
+    $chatId = $parsedPhone->getCountryCode() . $parsedPhone->getNationalNumber();
 
     $queryData = [
       'channelId' => $this->WhatsappChannelId,
@@ -262,7 +267,7 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
    * @param IBPActivityExternalEventListener $eventHandler
    * @param int $status
    */
-  public function Unsubscribe(IBPActivityExternalEventListener $eventHandler, int $status = 2)
+  public function Unsubscribe(IBPActivityExternalEventListener $eventHandler)
   {
     $this->workflow->RemoveEventHandler($this->name, $eventHandler);
   }

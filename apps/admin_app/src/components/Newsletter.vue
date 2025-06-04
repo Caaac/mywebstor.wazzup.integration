@@ -71,18 +71,20 @@ const workflowStart = async () => {
       <Button @click="workflowStart" label="Запустить бизнес процессы" />
     </div>
 
-    <DataTable v-model:selection="selectedAppointments" :value="appointments" dataKey="id"
+    <DataTable v-model:selection="selectedAppointments" :value="appointments" dataKey="ID"
       tableStyle="min-width: 50rem">
       <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
       <Column field="ID" header="ID записи на прием"></Column>
-      <Column field="DOCKTOR_ID" header="ID доктора"></Column>
-      <Column field="CONTACT_ID" header="ID контакта"></Column>
+
       <Column header="ФИО врача">
         <template #body="slotProps">
           {{ slotProps.data.DOCKTOR_LAST_NAME + ' ' + slotProps.data.DOCKTOR_NAME + ' ' +
             slotProps.data.DOCKTOR_SECOND_NAME }}
         </template>
       </Column>
+
+      <Column field="CONTACT_FULL_NAME" header="ФИО пациента"></Column>
+      <Column field="STATUS_NAME" header="Статус"></Column>
 
       <Column header="Дата создания записи">
         <template #body="slotProps">

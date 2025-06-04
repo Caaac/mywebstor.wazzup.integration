@@ -1,9 +1,10 @@
 <?
 
-use \Bitrix\Main\Application;
+use Bitrix\Main\Application;
+use Bitrix\Main\Type\DateTime;
 use Bitrix\Main\SystemException;
 use Bitrix\Main\Localization\Loc;
-use Bitrix\Main\Type\DateTime;
+
 use Mywebstor\Wazzup\Integration\WorkflowSendedMessagesTable;
 
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
@@ -119,31 +120,19 @@ class MywebstorPAMain extends \CBitrixComponent
       }
 
       try {
-        $firstObj = null;
-
         foreach ($msgColl as $msgObj) {
-          switch ($firstObj == null) {
-            case true:
-              $firstObj = $msgObj;
-              $msgObj->set('ANSWERED_MESSAGE', $messageData['ANSWERED_MESSAGE']);
-              $msgObj->set('ANSWERED_MESSAGE_ID', $messageData['ANSWERED_MESSAGE_ID']);
-              $msgObj->set('DATE_ANSWER', $messageData['DATE_ANSWER']);
-              $msgObj->set('STATUS', WorkflowSendedMessagesTable::STATUS_ANSWERED);
-              $msgObj->save();
-              break;
-            case false:
-            default:
-              $msgObj->setStatus(WorkflowSendedMessagesTable::STATUS_NOT_ANSWERED);
-              $msgObj->save();
-              break;
-          }
-        }
+          $msgObj->set('ANSWERED_MESSAGE', $messageData['ANSWERED_MESSAGE']);
+          $msgObj->set('ANSWERED_MESSAGE_ID', $messageData['ANSWERED_MESSAGE_ID']);
+          $msgObj->set('DATE_ANSWER', $messageData['DATE_ANSWER']);
+          $msgObj->set('STATUS', WorkflowSendedMessagesTable::STATUS_ANSWERED);
+          $msgObj->save();
 
-        CBPRuntime::SendExternalEvent(
-          $firstObj->getWorkflowId(),
-          $firstObj->getActivityName(),
-          $messageData,
-        );
+          CBPRuntime::SendExternalEvent(
+            $msgObj->getWorkflowId(),
+            $msgObj->getActivityName(),
+            $messageData,
+          );
+        }
       } catch (SystemException $e) {
         AddMessage2Log(print_r([
           'MODULE' => 'mywebstor.wazzup.integration',

@@ -12,6 +12,7 @@ use \MyWebstor\Hms\AppointmentTable;
 /* -- e.t.c. --  */
 use CIBlockElement;
 use DateTimeInterface;
+use Bitrix\Crm\PhaseSemantics;
 use Bitrix\Rest\RestException;
 use Bitrix\Main\Type\DateTime;
 use Bitrix\Main\Config\Option;
@@ -89,11 +90,22 @@ class Appointment extends \IRestService
           ['DATE_CREATE', 'DATE_CREATE', 'DATE_CREATE']
         )
       )
-      ->setSelect(['ID', 'DOCTOR_ID', 'DATE_FROM', 'DATE_CREATE', 'DOCTOR', 'DOCTOR.USER', 'CONTACT_ID'])
+      ->setSelect([
+        'ID', 
+        'DOCTOR_ID', 
+        'DATE_FROM', 
+        'DATE_CREATE', 
+        'DOCTOR', 
+        'DOCTOR.USER', 
+        'CONTACT_ID', 
+        'CONTACT',
+        'STATUS',
+      ])
       ->setFilter([
         '!CONTACT_ID' => null,
         '=DATE_FROM_STR' => $selectedDate->format('d.m.Y'),
         '!DATE_CREATE_STR' => (new DateTime())->format('d.m.Y'),
+        '!=STATUS.SEMANTICS' => PhaseSemantics::FAILURE,
       ]);
 
     $result = [];
@@ -108,8 +120,13 @@ class Appointment extends \IRestService
         'DOCKTOR_NAME' => $obj->getDoctor()->getUser()->getName(),
         'DOCKTOR_LAST_NAME' => $obj->getDoctor()->getUser()->getLastName(),
         'DOCKTOR_SECOND_NAME' => $obj->getDoctor()->getUser()->getSecondName(),
+        'CONTACT_FULL_NAME' => 
+          $obj->getContact()->getLastName() . ' ' . 
+          $obj->getContact()->getName() . ' ' . 
+          $obj->getContact()->getSecondName(),
         'DATE_FROM' => $obj->getDateFrom()->format(DateTimeInterface::ATOM),
         'DATE_CREATE' => $obj->getDateCreate()->format(DateTimeInterface::ATOM),
+        'STATUS_NAME' => $obj->getStatus()->getName(),
       ];
     }
 
