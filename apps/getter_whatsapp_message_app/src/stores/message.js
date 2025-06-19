@@ -67,22 +67,29 @@ export const messageStore = defineStore('message', () => {
   }
 
   const save = async () => {
-    BX.rest.callMethod(
-      "mwi.activity.settings.update",
-      {
-        activityName: store.activityId,
-        activityProperties: {
-          ReservePhone: params.value.activityProperties.ReservePhone,
-          WhatsappMessageTemplateGUID: params.value.selectedTemplate.templateGuid,
-          // WhatsappMessageTemplateCode: params.value.selectedTemplate.templateCode,
-          WhatsappMessageBodyValues: JSON.stringify(params.value.variables.body),
-          WhatsappChannelId: params.value.activityProperties.WhatsappChannelId
+    return new Promise((resolve, reject) => {
+      BX.rest.callMethod(
+        "mwi.activity.settings.update",
+        {
+          activityName: store.activityId,
+          activityProperties: {
+            ReservePhone: params.value.activityProperties.ReservePhone,
+            WhatsappMessageTemplateGUID: params.value.selectedTemplate.templateGuid,
+            // WhatsappMessageTemplateCode: params.value.selectedTemplate.templateCode,
+            WhatsappMessageBodyValues: JSON.stringify(params.value.variables.body),
+            WhatsappChannelId: params.value.activityProperties.WhatsappChannelId
+          }
+        },
+        response => {
+          if (response.error()) {
+            reject(response)
+          }
+
+          resolve(response);
+          console.log(response);
         }
-      },
-      response => {
-        console.log(response);
-      }
-    )
+      )
+    })
   }
 
   const setTemplate = () => {

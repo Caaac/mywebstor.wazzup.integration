@@ -45,7 +45,7 @@ export const newsletterStore = defineStore('newsletter', () => {
       }]
 
       cmd["bizProcs"] = ['mwi.bizproc.list', {}]
-      cmd["selectedBizProc"] = ['mwi.bizproc.settings.get', {}]
+      cmd["appSettings"] = ['mwi.settings.get', { keys: ['app_bizproc_selected', 'app_doctors_selected'] }]
       cmd["doctors"] = ['mwi.hms.doctor.list', {}]
 
       BX.rest.callBatch(
@@ -60,7 +60,8 @@ export const newsletterStore = defineStore('newsletter', () => {
 
           params.value.APPOINTMENTS = responce.appointments.data();
           params.value.BIZ_PROC_LIST = responce.bizProcs.data();
-          params.value.SELECTED_BIZ_PROC = responce.selectedBizProc.data();
+          params.value.SELECTED_BIZ_PROC = +responce.appSettings.data()['app_bizproc_selected'];
+          filter.value.DOCTORS = JSON.parse(responce.appSettings.data()['app_doctors_selected']);
           params.value.DOCTORS = responce.doctors.data();
 
           params.value.DOCTORS.map(doctor => {
@@ -74,13 +75,16 @@ export const newsletterStore = defineStore('newsletter', () => {
     })
   }
 
-  const saveBizproc = async (loading = true, stopLoading = false) => {
+  const saveAppSettings = async (loading = true, stopLoading = false) => {
     store.loading.newsletter = loading;
 
     return new Promise((resolve, reject) => {
       BX.rest.callMethod(
-        'mwi.bizproc.settings.update',
-        { bizprocId: params.value.SELECTED_BIZ_PROC },
+        'mwi.settings.set',
+        {
+          app_bizproc_selected: params.value.SELECTED_BIZ_PROC,
+          app_doctors_selected: JSON.stringify(filter.value.DOCTORS)
+        },
         (responce) => {
           if (responce.error()) {
             store.helper().errorToast(responce.answer.error.error_description)
@@ -117,6 +121,6 @@ export const newsletterStore = defineStore('newsletter', () => {
     })
   }
 
-  return { init, params, filter, saveBizproc, selectedAppointments, workflowStart, reloadData }
+  return { init, params, filter, saveAppSettings, selectedAppointments, workflowStart, reloadData }
 })
 

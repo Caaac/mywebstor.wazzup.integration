@@ -23,9 +23,7 @@ if (isset($requers['dev_mode'])) {
 ?>
   
 <body>
-    <div id="app">
-      <!-- Hello -->
-    </div>
+    <div id="app"></div>
 </body>
 
 

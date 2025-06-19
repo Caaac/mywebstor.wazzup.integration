@@ -44,7 +44,7 @@ const workflowStart = async () => {
   invalid.value.SELECTED_BIZ_PROC = false
 
   try {
-    await store.newsletter().saveBizproc()
+    await store.newsletter().saveAppSettings()
     await store.newsletter().workflowStart()
   } catch (error) {
     console.error(error);

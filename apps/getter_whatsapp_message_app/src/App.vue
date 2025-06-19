@@ -52,7 +52,7 @@ const save = () => {
     store.helper().successToast('Сохранено')
   })
     .catch(error => {
-      store.helper().errorToast(error)
+      store.helper().errorToast(error.answer.error_description)
     })
 }
 

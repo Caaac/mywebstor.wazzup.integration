@@ -29,7 +29,7 @@ onMounted(async () => {
       <TabPanel header="Главная">
         <Main />
       </TabPanel>
-      <TabPanel header="Генерация рассылки">
+      <TabPanel header="Генерация рассылки" contentStyle="overflow-y: auto;">
         <Newsletter />
       </TabPanel>
       <TabPanel header="Настройки">
