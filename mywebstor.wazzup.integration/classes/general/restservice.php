@@ -13,6 +13,7 @@ class CMywebstorWazzupIntegrationRestService extends \IRestService
         Rest\Settings::$methods,
         Rest\Integration::$methods,
         Rest\ActivitySettings::$methods,
+        Rest\AutoSendSettings::$methods,
         
         Rest\Hms\Doctor::$methods,
         Rest\Hms\Appointment::$methods,

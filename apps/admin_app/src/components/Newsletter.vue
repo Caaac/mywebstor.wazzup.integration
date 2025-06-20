@@ -64,7 +64,7 @@ const workflowStart = async () => {
           placeholder="Выберите врача" style="width: 300px; margin-left: 20px" />
         <Calendar v-model="params.APPOINTMENT_DATE" dateFormat="dd.mm.yy" style="width: 300px; margin-left: 20px">
           <template #footer>
-            <Button @click="store.newsletter().reloadData()" label="Применить" />
+            <Button @click="store.newsletter().reloadAppointments()" label="Применить" />
           </template>
         </Calendar>
       </div>

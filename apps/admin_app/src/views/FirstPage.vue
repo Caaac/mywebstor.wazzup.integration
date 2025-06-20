@@ -5,6 +5,7 @@ import TabPanel from 'primevue/tabpanel';
 /* Custom componenst */
 import Main from '@/components/Main.vue';
 import Newsletter from '@/components/Newsletter.vue';
+import AutoSendSettings from '@/components/AutoSendSettings.vue';
 import Settings from '@/components/Settings.vue';
 /* Pinia store */
 import { rootStore } from '@/stores/index';
@@ -31,6 +32,9 @@ onMounted(async () => {
       </TabPanel>
       <TabPanel header="Генерация рассылки" contentStyle="overflow-y: auto;">
         <Newsletter />
+      </TabPanel>
+      <TabPanel header="Настройка авто-рассылки">
+        <AutoSendSettings />
       </TabPanel>
       <TabPanel header="Настройки">
         <Settings />

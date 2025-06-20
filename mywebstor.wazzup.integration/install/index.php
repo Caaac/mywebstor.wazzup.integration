@@ -57,6 +57,7 @@ class mywebstor_wazzup_integration extends CModule
         $this->InstallDB();
         $this->InstallFiles();
         $this->InstallEvents();
+        $this->InstallOptions();
 
         return true;
     }
@@ -78,6 +79,7 @@ class mywebstor_wazzup_integration extends CModule
 
             $this->UnInstallFiles();
             $this->UnInstallEvents();
+            $this->UnInstallOptions();
 
             ModuleManager::unRegisterModule($this->MODULE_ID);
         }
@@ -204,5 +206,24 @@ class mywebstor_wazzup_integration extends CModule
     public function DirPath()
     {
         return Application::getDocumentRoot() . '/upload/' . $this->MODULE_ID . '/excel/';
+    }
+
+    public function InstallOptions()
+    {
+        Bitrix\Main\Config\Option::set('mywebstor.wazzup.integration', 'auto_send_notification_settings', json_encode([
+            'ACTIVE' => 'N',
+            'DATE' => '1970-01-01T12:00:00+03:00',
+            'DIFF' => 1,
+            'DISABLED_DOCTORS' => [],
+        ]));
+        return true;
+    }
+
+    public function UnInstallOptions()
+    {
+        Bitrix\Main\Config\Option::delete('mywebstor.wazzup.integration', [
+            'name' => 'auto_send_notification_settings'
+        ]);
+        return true;
     }
 }

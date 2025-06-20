@@ -5,6 +5,7 @@ namespace Mywebstor\Wazzup\Integration\Rest\Hms;
 /* Module classes */
 
 /* mywebstor.hms classes */
+
 use \MyWebstor\Hms\AppointmentTable;
 
 /* Bitrix classes */
@@ -79,9 +80,9 @@ class Appointment extends \IRestService
 
     if (count($absences)) {
       $elProps = CIBlockElement::GetPropertyValues(
-        $absenceIblockId, 
-        ['ID' => array_column($absences, 'ID')], 
-        false, 
+        $absenceIblockId,
+        ['ID' => array_column($absences, 'ID')],
+        false,
         ['ID' => $userPropId]
       );
       while ($el = $elProps->GetNext()) $userIsAbsense[] = $el[$userPropId];
@@ -133,10 +134,7 @@ class Appointment extends \IRestService
         'DOCKTOR_NAME' => $obj->getDoctor()->getUser()->getName(),
         'DOCKTOR_LAST_NAME' => $obj->getDoctor()->getUser()->getLastName(),
         'DOCKTOR_SECOND_NAME' => $obj->getDoctor()->getUser()->getSecondName(),
-        'CONTACT_FULL_NAME' =>
-        $obj->getContact()->getLastName() . ' ' .
-          $obj->getContact()->getName() . ' ' .
-          $obj->getContact()->getSecondName(),
+        'CONTACT_FULL_NAME' => $obj->getContact()->getLastName() . ' ' . $obj->getContact()->getName() . ' ' . $obj->getContact()->getSecondName(),
         'DATE_FROM' => $obj->getDateFrom()->format(DateTimeInterface::ATOM),
         'DATE_CREATE' => $obj->getDateCreate()->format(DateTimeInterface::ATOM),
         'STATUS_NAME' => $obj->getStatus()->getName(),

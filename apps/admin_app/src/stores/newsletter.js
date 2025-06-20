@@ -75,6 +75,33 @@ export const newsletterStore = defineStore('newsletter', () => {
     })
   }
 
+  const reloadAppointments = async () => {
+    return new Promise((resolve, reject) => {
+      const cmd = {}
+
+      cmd["appointments"] = ['mwi.hms.appointment.get', {
+        filter: {
+          appointment_date: moment(params.value.APPOINTMENT_DATE.toISOString()).format('YYYY-MM-DD')
+        }
+      }]
+
+      BX.rest.callBatch(
+        cmd,
+        (responce) => {
+          Object.keys(responce).forEach(key => {
+            if (responce[key].error()) {
+              store.helper().errorToast(responce[key].answer.error.error_description)
+              reject(responce[key].error())
+            }
+          });
+
+          params.value.APPOINTMENTS = responce.appointments.data();
+          resolve(responce)
+        }
+      )
+    })
+  }
+
   const saveAppSettings = async (loading = true, stopLoading = false) => {
     store.loading.newsletter = loading;
 
@@ -121,6 +148,6 @@ export const newsletterStore = defineStore('newsletter', () => {
     })
   }
 
-  return { init, params, filter, saveAppSettings, selectedAppointments, workflowStart, reloadData }
+  return { init, params, filter, saveAppSettings, selectedAppointments, workflowStart, reloadData, reloadAppointments }
 })
 

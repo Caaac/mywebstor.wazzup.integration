@@ -136,7 +136,7 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
 
     $this->stage = 1;
 
-    $nextExec = (new \Bitrix\Main\Type\DateTime())->add('1 day');
+    $nextExec = (new \Bitrix\Main\Type\DateTime())->add('2 minutes');
 
     $this->agentId = CAgent::AddAgent(
       "Mywebstor\Wazzup\Integration\Agents\Message::terminateWorkflow('" . $this->workflow->getInstanceId() . "');",
@@ -354,6 +354,8 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
       $wfData['TEMPLATE'],
       $activityName
     );
+
+    \Bitrix\Main\Diag\Debug::writeToFile(print_r($arActivityPropByApp, true), "DEBUG_NAME", "__t_mwi__.log");
 
     /** Check app setted fields */
     foreach (self::getAppFields() as $field) {
