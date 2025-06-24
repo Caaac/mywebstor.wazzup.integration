@@ -221,9 +221,7 @@ class mywebstor_wazzup_integration extends CModule
 
     public function UnInstallOptions()
     {
-        Bitrix\Main\Config\Option::delete('mywebstor.wazzup.integration', [
-            'name' => 'auto_send_notification_settings'
-        ]);
+        Bitrix\Main\Config\Option::delete('mywebstor.wazzup.integration');
         return true;
     }
 }

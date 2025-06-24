@@ -41,7 +41,7 @@ class AutoSender
     $nextExec = new DateTime($plannedDate, DateTimeInterface::ATOM);
 
     $agentId = CAgent::AddAgent(
-      "Mywebstor\Wazzup\Integration\Agents\Message::sendMessages();",
+      "\Mywebstor\Wazzup\Integration\Agents\AutoSender::sendMessages();",
       "mywebstor.wazzup.integration",
       "Y",
       86400,
@@ -54,12 +54,15 @@ class AutoSender
     Option::set('mywebstor.wazzup.integration', 'auto_send_notification_agent_id', $agentId);
   }
 
-  public static function deactivateAgent() {
+  public static function deactivateAgent()
+  {
     $agentId = Option::get('mywebstor.wazzup.integration', 'auto_send_notification_agent_id', 0);
 
     if ($agentId) {
       CAgent::Delete($agentId);
     }
+
+    Option::delete('mywebstor.wazzup.integration', ['name' => 'auto_send_notification_agent_id']);
   }
 
   public static function sendMessages()
@@ -162,8 +165,6 @@ class AutoSender
       ];
     }
 
-    \Bitrix\Main\Diag\Debug::writeToFile(print_r($result, true), "DEBUG_NAME", "__mwi_agent_autosender__.log");
-
     $wfTmplId = Option::get('mywebstor.wazzup.integration', 'app_bizproc_selected', null);
 
     if (!$wfTmplId) {
@@ -187,26 +188,40 @@ class AutoSender
 
     $arErrorsTmp = [];
 
-    foreach ($result as $appId) {
-      $wfId = \CBPDocument::StartWorkflow(
-        $wfTmplId,
-        [
-          $wfObj->getModuleId(),
-          $wfObj->getEntity(),
-          $appId
-        ],
-        [],
-        $arErrorsTmp
-      );
+    foreach ($result as $appointment) {
+      try {
+        $wfId = \CBPDocument::StartWorkflow(
+          $wfTmplId,
+          [
+            $wfObj->getModuleId(),
+            $wfObj->getEntity(),
+            $appointment['ID']
+          ],
+          [],
+          $arErrorsTmp
+        );
 
-      \Bitrix\Main\Diag\Debug::writeToFile(print_r($wfId, true), "BP STARTED", "__mwi_agent_autosender__.log");
+        \Bitrix\Main\Diag\Debug::writeToFile(print_r([
+          'WF_ID' => $wfId,
+          'WF' => [
+            $wfObj->getModuleId(),
+            $wfObj->getEntity(),
+            $appointment['ID']
+          ],
+          'APPOINTMENT' => $appointment,
+        ], true), "BP STARTED", "__mwi_agent_autosender__.log");
+      } catch (\Exception $ex) {
+        \Bitrix\Main\Diag\Debug::writeToFile(print_r($ex->getMessage(), true), "ERROR-11", "__mwi_agent_autosender__.log");
+      } catch (\Error $ex) {
+        \Bitrix\Main\Diag\Debug::writeToFile(print_r([$ex->getMessage(), $ex->getTraceAsString()], true), "ERROR-11", "__mwi_agent_autosender__.log");
+      }
     }
 
     if (count($arErrorsTmp) > 0) {
       \Bitrix\Main\Diag\Debug::writeToFile(print_r($arErrorsTmp, true), "ERROR", "__mwi_agent_autosender__.log");
     }
 
-    return 'Mywebstor\Wazzup\Integration\Agents\Message::sendMessages();';
+    return '\Mywebstor\Wazzup\Integration\Agents\AutoSender::sendMessages();';
   }
 
   protected static function deactivate()
