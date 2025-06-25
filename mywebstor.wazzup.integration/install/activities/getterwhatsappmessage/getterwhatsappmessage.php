@@ -253,8 +253,6 @@ class CBPGetterWhatsappMessage extends CBPActivity implements IBPEventActivity, 
 
     $this->deleteAgent();
 
-    AddMessage2Log($arEventParameters, 'OnExternalEvent params');
-
     if ($this->executionStatus != CBPActivityExecutionStatus::Closed) {
       $this->Unsubscribe($this);
       $this->workflow->CloseActivity($this);

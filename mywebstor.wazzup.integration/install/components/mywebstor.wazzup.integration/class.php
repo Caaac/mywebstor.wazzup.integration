@@ -86,13 +86,6 @@ class MywebstorPAMain extends \CBitrixComponent
       'data' => $this->request->getJsonList()->toArray(),
     );
 
-    // TODO: delete
-    AddMessage2Log(print_r([
-      'METHOD' => 'debugIntegrate',
-      'DATA' => $this->request->getJsonList()->toArray(),
-      // '_SERVER' => $_SERVER,
-    ], true));
-
     $request = $this->request->getJsonList()->toArray();
 
     foreach ($request['messages'] ?: [] as $key => $message) {
